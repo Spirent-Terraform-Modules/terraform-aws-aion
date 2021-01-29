@@ -103,7 +103,7 @@ def parse_args():
 
 def get_server_init_data(c, orgInfo, userInfo):
     # Config Auto Fill
-    org = orgInfo[0]
+    org = orgInfo
     if not c.get("org_id"):
         c["org_id"] = org["id"]
         
@@ -136,7 +136,7 @@ def get_server_init_data(c, orgInfo, userInfo):
         
     emailSettings = None
 
-    # Send Initalization
+    # Send Initialization
     data = {
         "cluster":{
             "name": c["cluster_name"],
@@ -176,10 +176,9 @@ def main():
     handler = logging.StreamHandler()
     handler.setFormatter(formatter)
     LOG.addHandler(handler)
-    
+
     args = parse_args()
 
-    
     if args.verbose:
         LOG.setLevel(logging.DEBUG)
     else:
@@ -189,7 +188,7 @@ def main():
         log_handler = logging.FileHandler(args.log_file)
         log_handler.setFormatter(formatter)
         LOG.addHandler(log_handler)
-    
+
     c = args.__dict__
     LOG.debug("Config: %s" % json.dumps(c))
 
@@ -199,20 +198,19 @@ def main():
         appUrl = "http://" + c["platform_addr"]
     orionUrl = c["aion_url"]
 
-    
-    orgInfo = request(orionUrl + "/api/iam/organizations?subdomain=spirent").json()
+    orgInfo = request(orionUrl + "/api/iam/organizations/default").json()
     LOG.debug("orgInfo: %s" % json.dumps(orgInfo))
-    
+
     data = {
         "grant_type": "password",
         "username": c["aion_user"],
         "password": c["aion_password"],
-        "scope": orgInfo[0]["id"] 
+        "scope": orgInfo["id"]
     }
     r = request(orionUrl + "/api/iam/oauth2/token", data=data).json()
     accessToken = r["access_token"]
     LOG.debug("accessToken: %s" % accessToken)
-    
+
     hdrs = {
         "Accept": "application/json",
         "Authorization": "Bearer " + accessToken,
@@ -224,7 +222,7 @@ def main():
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
-        
+
     # Local Storage
     data = {
         "config": {
@@ -249,34 +247,55 @@ def main():
                 r = request(appUrl + "/api/local/initialization").json()
             except Exception as e:
                 LOG.debug("installation status exception which may not be error: %s" % str(e))
-                LOG.info("installation status not returned.  Assuming setup completed.")
-                completed = True
-                break
-                
-            LOG.debug("intialization status: %s\n" % json.dumps(r))
-            if r["initialized"]:
-                completed = True
-                break
-            if r.get("status") == "error":
-                raise Exception("failed to configure platform")
+                r = None
+
+            if r:
+                LOG.debug("intialization status: %s\n" % json.dumps(r))
+                if r["initialized"]:
+                    completed = True
+                    break
+                if r.get("status") == "error":
+                    raise Exception("failed to configure platform")
                 
             if (time.time() - start_time) > wait_time:
-                LOG.warning("platform initalized didn't complete in %d seconds. platform wait timed out." % wait_time)
+                LOG.warning("platform initialized didn't complete in %d seconds. platform wait timed out." % wait_time)
                 break
             time.sleep(5)
-        
-    if completed:
-        LOG.info("platform initalized is complete")
-    else:
-        LOG.info("platform intialization may still be in progress.  Manually check platform for completion.")
-    LOG.info("Exiting!")
-    sys.exit(0)
+
+    if not completed:
+        raise Exception("platform initialized did not complete")
+
+    orgInfo = request(appUrl + "/api/iam/organizations/default").json()
+    LOG.debug("orgInfo: %s" % json.dumps(orgInfo))
+
+    data = {
+        "grant_type": "password",
+        "username": c["admin_email"],
+        "password": c["admin_password"],
+        "scope": orgInfo["id"]
+    }
+    r = request(appUrl + "/api/iam/oauth2/token", data=data).json()
+    appToken = r["access_token"]
+
+    hdrs = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + appToken,
+    }
+    data = {
+        "url": orionUrl,
+        "username": c["aion_user"],
+        "password": c["aion_password"]
+    }
+    request(appUrl + "/api/cluster/settings/temeva/login", headers=hdrs, data=data)
+
 
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         LOG.error('%s' % str(e))
+        LOG.debug('Error in setup-aion', exc_info=True)
         sys.exit(str(e))
 
 '''

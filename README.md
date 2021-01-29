@@ -35,7 +35,7 @@ Finish administrative step up:
 | admin\_last\_name | Cluster admin user last name.  Default is obtained from AION user information. | `string` | `""` | no |
 | admin\_password | Cluster admin user password. Use this to login to to the instance web page. | `string` | n/a | yes |
 | aion\_password | AION user password for aion\_url | `string` | n/a | yes |
-| aion\_url | AION URL | `string` | `"https://spirentaion.com"` | no |
+| aion\_url | AION URL. An example URL would be https://example.spirentaion.com. | `string` | n/a | yes |
 | aion\_user | AION user registered on aion\_url | `string` | n/a | yes |
 | ami | The AION AMI.  When not specified latests AMI will be used. | `string` | `""` | no |
 | cluster\_names | Instance cluster names.  List length must equal instance\_count. | `list(string)` | `[]` | no |

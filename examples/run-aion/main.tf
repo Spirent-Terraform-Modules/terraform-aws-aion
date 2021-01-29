@@ -18,6 +18,7 @@ module "aion" {
   key_name         = "stcv_dev_key"
   private_key_file = "~/.ssh/stcv_dev_key.pem"
 
+  aion_url       = "https://spirent.spirentaion.com"
   aion_user      = var.aion_user
   aion_password  = var.aion_password
   admin_password = var.admin_password

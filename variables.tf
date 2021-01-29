@@ -81,9 +81,8 @@ variable "enable_provisioner" {
 }
 
 variable "aion_url" {
-  description = "AION URL"
+  description = "AION URL. An example URL would be https://example.spirentaion.com."
   type        = string
-  default     = "https://spirentaion.com"
 }
 
 variable "aion_user" {
