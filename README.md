@@ -4,9 +4,10 @@
 Run Spirent AION platform instances.  When provisioning_enabled=True the AION instance will be configured using the specified variables.
 After Terraform apply finishes you will be able to point your browser at the instance_public_ips addresses.
 
-Finish administrative stepup:
-* Login using the admin_email and admin_password.
-* 
+Finish administrative step up:
+* Login on the instance web page using specified admin_email and admin_password.
+* Navigate to the "License Manager" "Entitlements" and add entitlements.
+* Navigate to the "Settings" "Add New Products" and install products.
 
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
