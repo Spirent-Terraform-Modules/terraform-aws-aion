@@ -1,11 +1,11 @@
 variable "ami" {
-  description = "The AION AMI.  When not specified latests AMI will be used."
+  description = "The AION AMI.  When not specified latest AMI will be used."
   type        = string
   default     = ""
 
   validation {
     condition     = var.ami == "" || can(regex("^ami-", var.ami))
-    error_message = "Please provide a valid ami id, starting with \"ami-\". or leave blank for latest Windows Server 2019 AMI."
+    error_message = "Please provide a valid ami id, starting with \"ami-\". or leave blank for latest Spirent AION AMI."
   }
 }
 
@@ -75,7 +75,7 @@ variable "private_key_file" {
 }
 
 variable "enable_provisioner" {
-  description = "Enable provisioning"
+  description = "Enable provisioning.  When enabled instances will be initialized with the specified variables."
   type        = bool
   default     = true
 }

@@ -50,8 +50,8 @@ def str2bool(v):
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--aion_url", help="AION URL", type=str,
-                        default="https://spirent.aiontest.net", required=True)
+    parser.add_argument("--aion_url", help="AION URL. An example URL would be https://example.spirentaion.com", type=str,
+                        default="", required=True)
     parser.add_argument("--aion_user", help="AION user", type=str,
                         required=True)
     parser.add_argument("--aion_password", help="AION password", type=str,
@@ -101,9 +101,8 @@ def parse_args():
         raise Exceoption("admin password must be specified")
     return args
 
-def get_server_init_data(c, orgInfo, userInfo):
+def get_server_init_data(c, org, user_info):
     # Config Auto Fill
-    org = orgInfo
     if not c.get("org_id"):
         c["org_id"] = org["id"]
         
@@ -123,18 +122,18 @@ def get_server_init_data(c, orgInfo, userInfo):
         c["node_name"] = c["platform_addr"]
 
     if not c.get("admin_firt_name"):
-        c["admin_first_name"] = userInfo["first"]
+        c["admin_first_name"] = user_info["first"]
 
     if not c.get("admin_last_name"):
-        c["admin_last_name"] = userInfo["last"]
+        c["admin_last_name"] = user_info["last"]
 
     if not c.get("admin_email"):
-        c["admin_email"] = userInfo["email"]
+        c["admin_email"] = user_info["email"]
 
     if not c.get("local_admin_password"):
         c["local_admin_password"] = c["admin_password"]
         
-    emailSettings = None
+    email_settings = None
 
     # Send Initialization
     data = {
@@ -152,7 +151,7 @@ def get_server_init_data(c, orgInfo, userInfo):
                 "subdomain": c["org_subdomain"],
                 "domains": c["org_domains"]
             },
-            "email_settings": emailSettings,
+            "email_settings": email_settings,
             "metrics_opt_out": c["metrics_opt_out"],
             "web_settings":{
                 "http":{
@@ -193,30 +192,30 @@ def main():
     LOG.debug("Config: %s" % json.dumps(c))
 
     if c["local_addr"]:
-        appUrl = "http://" + c["local_addr"]
+        app_url = "http://" + c["local_addr"]
     else:       
-        appUrl = "http://" + c["platform_addr"]
-    orionUrl = c["aion_url"]
+        app_url = "http://" + c["platform_addr"]
+    orion_url = c["aion_url"]
 
-    orgInfo = request(orionUrl + "/api/iam/organizations/default").json()
-    LOG.debug("orgInfo: %s" % json.dumps(orgInfo))
+    org_info = request(orion_url + "/api/iam/organizations/default").json()
+    LOG.debug("org_info: %s" % json.dumps(org_info))
 
     data = {
         "grant_type": "password",
         "username": c["aion_user"],
         "password": c["aion_password"],
-        "scope": orgInfo["id"]
+        "scope": org_info["id"]
     }
-    r = request(orionUrl + "/api/iam/oauth2/token", data=data).json()
-    accessToken = r["access_token"]
-    LOG.debug("accessToken: %s" % accessToken)
+    r = request(orion_url + "/api/iam/oauth2/token", data=data).json()
+    access_token = r["access_token"]
+    LOG.debug("access_token: %s" % access_token)
 
     hdrs = {
         "Accept": "application/json",
-        "Authorization": "Bearer " + accessToken,
+        "Authorization": "Bearer " + access_token,
     }
-    userInfo = request(orionUrl + "/api/iam/users/my", headers=hdrs).json()
-    LOG.debug("userInfo: %s" % json.dumps(userInfo))
+    user_info = request(orion_url + "/api/iam/users/my", headers=hdrs).json()
+    LOG.debug("userInfo: %s" % json.dumps(user_info))
 
     hdrs = {
         "Accept": "application/json",
@@ -230,12 +229,12 @@ def main():
             "remote_uri":""
         }
     }
-    localStorage = request(appUrl + "/api/local/storage/test", headers=hdrs, data=data).json()
-    LOG.debug("localStorage: %s" % json.dumps(localStorage))
+    local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
+    LOG.debug("localStorage: %s" % json.dumps(local_storage))
 
-    data = get_server_init_data(c, orgInfo, userInfo)
+    data = get_server_init_data(c, org_info, user_info)
     LOG.debug("ServerFormingNewCluster: %s" % json.dumps(data))
-    r = request(appUrl + "/api/local/initialization/server-forming-new-cluster", headers=hdrs, data=data)
+    r = request(app_url + "/api/local/initialization/server-forming-new-cluster", headers=hdrs, data=data)
 
     completed = False
     start_time = time.time()
@@ -244,7 +243,7 @@ def main():
         LOG.info("Waiting for AION platform intialization to complete...")
         while True:
             try:
-                r = request(appUrl + "/api/local/initialization").json()
+                r = request(app_url + "/api/local/initialization").json()
             except Exception as e:
                 LOG.debug("installation status exception which may not be error: %s" % str(e))
                 r = None
@@ -265,29 +264,29 @@ def main():
     if not completed:
         raise Exception("platform initialized did not complete")
 
-    orgInfo = request(appUrl + "/api/iam/organizations/default").json()
-    LOG.debug("orgInfo: %s" % json.dumps(orgInfo))
+    org_info = request(app_url + "/api/iam/organizations/default").json()
+    LOG.debug("org_info: %s" % json.dumps(org_info))
 
     data = {
         "grant_type": "password",
         "username": c["admin_email"],
         "password": c["admin_password"],
-        "scope": orgInfo["id"]
+        "scope": org_info["id"]
     }
-    r = request(appUrl + "/api/iam/oauth2/token", data=data).json()
-    appToken = r["access_token"]
+    r = request(app_url + "/api/iam/oauth2/token", data=data).json()
+    app_token = r["access_token"]
 
     hdrs = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + appToken,
+        "Authorization": "Bearer " + app_token,
     }
     data = {
-        "url": orionUrl,
+        "url": orion_url,
         "username": c["aion_user"],
         "password": c["aion_password"]
     }
-    request(appUrl + "/api/cluster/settings/temeva/login", headers=hdrs, data=data)
+    request(app_url + "/api/cluster/settings/temeva/login", headers=hdrs, data=data)
 
 
 if __name__ == "__main__":

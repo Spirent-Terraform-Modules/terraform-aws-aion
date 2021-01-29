@@ -9,11 +9,11 @@ data "aws_vpc" "default" {
 
 module "aion" {
   source = "../.."
-  ami    = "ami-03a87b10a193257d1"
   vpc_id = data.aws_vpc.default.id
 
-  subnet_id           = "subnet-ffe75cb2"
-  ingress_cidr_blocks = ["74.87.49.203/32"]
+  subnet_id = "subnet-ffe75cb2"
+  # Warning: Using all adddress cidr block to simplify the example. You should limit instance access.
+  ingress_cidr_blocks = ["0.0.0.0/0"]
 
   key_name         = "stcv_dev_key"
   private_key_file = "~/.ssh/stcv_dev_key.pem"
