@@ -38,6 +38,16 @@ def csv_list(vstr, sep=','):
             values.append(v)
     return values
 
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--aion_url", help="AION URL", type=str,
@@ -69,9 +79,9 @@ def parse_args():
                         default="")
     parser.add_argument("--org_subdomain", help="Organization Subdomain", type=str,
                         default="")
-    parser.add_argument("--metrics_opt_out", help="Metrics Opt Out", type=bool,
+    parser.add_argument("--metrics_opt_out", help="Metrics Opt Out", type=str2bool,
                         default=False)
-    parser.add_argument("--http_enabled", help="HTTP Enabled", type=bool,
+    parser.add_argument("--http_enabled", help="HTTP Enabled", type=str2bool,
                         default=False)
     parser.add_argument("--local_admin_password", help="HTTP Enabled", type=str,
                         default="")
@@ -82,7 +92,7 @@ def parse_args():
     
     parser.add_argument("--wait_timeout", help="Time in seconds to wait for platform initialization", type=str,
                         default=900)
-    parser.add_argument("-v", "--verbose", help="Verbose logging", type=bool, 
+    parser.add_argument("-v", "--verbose", help="Verbose logging", type=str2bool, 
                         default=False)
     parser.add_argument("--log_file", help="Log file for output. stdout when not set", type=str, default="")
     
@@ -235,7 +245,14 @@ def main():
     if wait_time:
         LOG.info("Waiting for AION platform intialization to complete...")
         while True:
-            r = request(appUrl + "/api/local/initialization").json()
+            try:
+                r = request(appUrl + "/api/local/initialization").json()
+            except Exception as e:
+                LOG.debug("installation status exception which may not be error: %s" % str(e))
+                LOG.info("installation status not returned.  Assuming setup completed.")
+                completed = True
+                break
+                
             LOG.debug("intialization status: %s\n" % json.dumps(r))
             if r["initialized"]:
                 completed = True
@@ -246,7 +263,7 @@ def main():
             if (time.time() - start_time) > wait_time:
                 LOG.warning("platform initalized didn't complete in %d seconds. platform wait timed out." % wait_time)
                 break
-            time.sleep(2)
+            time.sleep(5)
         
     if completed:
         LOG.info("platform initalized is complete")
@@ -259,9 +276,9 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        self.log.error('%s' % str(e))
-        exit(str(e))
+        LOG.error('%s' % str(e))
+        sys.exit(str(e))
 
 '''
-python3 setup-aion.py --aion_url "https://spirent.aiontest.net" --platform_addr "10.109.121.113" --aion_user <user> --aion_password <password> --admin_password <password>
+python3 setup-aion.py --aion_url "https://spirent.spirentaion.com" --platform_addr "10.109.121.113" --aion_user <user> --aion_password <password> --admin_password <password>
 '''

@@ -1,6 +1,10 @@
 
+
+
 # find latest Spirent AION AMI
 data "aws_ami" "aion" {
+  # TODO: Update with marketplace AMI when released
+
   owners      = ["712010841178"]
   most_recent = true
   # executable_users = ["all"]
@@ -38,6 +42,30 @@ resource "aws_security_group" "aion" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
+    cidr_blocks = var.ingress_cidr_blocks
+  }
+
+  # Application usage
+  ingress {
+    from_port   = 64000
+    to_port     = 64999
+    protocol    = "tcp"
+    cidr_blocks = var.ingress_cidr_blocks
+  }
+
+  # ICMP
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = var.ingress_cidr_blocks
+  }
+
+  # ICMPv6
+  ingress {
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmpv6"
     cidr_blocks = var.ingress_cidr_blocks
   }
 
@@ -92,20 +120,22 @@ data "template_file" "setup_aion" {
     aion_password           = var.aion_password
     cluster_name            = length(var.cluster_names) < 1 ? "" : var.cluster_names[count.index]
     node_name               = length(var.node_names) < 1 ? "" : var.node_names[count.index]
+    admin_email             = var.admin_email
     admin_first_name        = var.admin_first_name
     admin_last_name         = var.admin_last_name
     admin_password          = var.admin_password
     local_admin_password    = var.local_admin_password
     node_storage_provider   = var.node_storage_provider
     node_storage_remote_uri = var.node_storage_remote_uri
+    metrics_opt_out         = var.metrics_opt_out
+    http_enabled            = var.http_enabled
   }
 }
 
-output "setup_aion_sh" {
-  description = "Setup AION script"
-  value       = data.template_file.setup_aion.*.rendered
-
-}
+# output "setup_aion_sh" {
+#   description = "Setup AION script"
+#   value       = data.template_file.setup_aion.*.rendered
+# }
 
 # provison the AION VM
 resource "null_resource" "provisioner" {

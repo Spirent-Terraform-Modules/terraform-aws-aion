@@ -10,8 +10,11 @@ python3 ${script_file}\
    --admin_password '${admin_password}'\
    --admin_first_name '${admin_first_name}'\
    --admin_last_name '${admin_last_name}'\
+   --admin_email '${admin_email}'\
    --local_admin_password '${local_admin_password}'\
    --node_storage_provider '${node_storage_provider}'\
    --node_storage_remote_uri '${node_storage_remote_uri}'\
+   --metrics_opt_out '${metrics_opt_out}'\
+   --http_enabled '${http_enabled}'\
    --log_file setup-aion.log\
-   --verbose 1
+   --verbose 0

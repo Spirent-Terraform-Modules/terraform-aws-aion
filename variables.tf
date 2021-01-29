@@ -87,12 +87,12 @@ variable "aion_url" {
 }
 
 variable "aion_user" {
-  description = "AION user"
+  description = "AION user registered on aion_url"
   type        = string
 }
 
 variable "aion_password" {
-  description = "AION password"
+  description = "AION user password for aion_url"
   type        = string
 }
 
@@ -103,48 +103,66 @@ variable "cluster_names" {
 }
 
 variable "node_names" {
-  description = "Instance node names.  List length must equal instance_count."
+  description = "Instance cluster node names.  List length must equal instance_count."
   type        = list(string)
   default     = []
 }
 
-variable "admin_first_name" {
-  description = "Admin first name"
-  type        = string
-  default     = ""
-}
-
-variable "admin_last_name" {
-  description = "Admin last name"
+variable "admin_email" {
+  description = "Cluster admin user email. Use this to login to instance web page.  Default is obtained from AION user information."
   type        = string
   default     = ""
 }
 
 variable "admin_password" {
-  description = "Admin password"
+  description = "Cluster admin user password. Use this to login to to the instance web page."
   type        = string
 }
 
+variable "admin_first_name" {
+  description = "Cluster admin user first name. Default is obtained from AION user information."
+  type        = string
+  default     = ""
+}
+
+variable "admin_last_name" {
+  description = "Cluster admin user last name.  Default is obtained from AION user information."
+  type        = string
+  default     = ""
+}
+
 variable "local_admin_password" {
-  description = "Local admin password.  Will use admin_password if not specified."
+  description = "Cluster local admin password for instance SSH access.  Will use admin_password if not specified."
   type        = string
   default     = ""
 }
 
 variable "node_storage_provider" {
-  description = "Node storage provider"
+  description = "Cluster node storage provider"
   type        = string
   default     = "local"
 }
 
 variable "node_storage_remote_uri" {
-  description = "Node storage URI"
+  description = "Cluster node storage URI.  Leave blank for default when provider is local"
   type        = string
   default     = ""
 }
 
+variable "http_enabled" {
+  description = "Allow HTTP access as well as HTTPS.  Normally this is not recommended."
+  type        = bool
+  default     = false
+}
+
+variable "metrics_opt_out" {
+  description = "Opt-out of Spirent metrics data collection"
+  type        = bool
+  default     = false
+}
+
 variable "dest_dir" {
-  description = "Destination directory on the instance where files will be copied"
+  description = "Destination directory on the instance where provisining files will be copied"
   type        = string
   default     = "~"
 }
