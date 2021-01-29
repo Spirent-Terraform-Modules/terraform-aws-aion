@@ -12,7 +12,9 @@ HDRS = {
 
 LOG = logging.getLogger("setup_aion")
 
-def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirects=True, files=None, stream=False, verify=True):
+
+def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirects=True,
+            files=None, stream=False, verify=True):
     if not method:
         if data:
             method = 'POST'
@@ -28,6 +30,7 @@ def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirect
             raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), resp.content))
         return resp
 
+
 def csv_list(vstr, sep=','):
     ''' Convert a string of comma separated values to floats
         @returns iterable of floats
@@ -38,9 +41,10 @@ def csv_list(vstr, sep=','):
             values.append(v)
     return values
 
+
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
@@ -48,9 +52,11 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--aion_url", help="AION URL. An example URL would be https://example.spirentaion.com", type=str,
+    parser.add_argument("--aion_url",
+                        help="AION URL. An example URL would be https://example.spirentaion.com", type=str,
                         default="", required=True)
     parser.add_argument("--aion_user", help="AION user", type=str,
                         required=True)
@@ -58,7 +64,7 @@ def parse_args():
                         required=True)
     parser.add_argument("--local_addr",
                         help="Local API IP/host.  Will use platform_addr if not specified.",
-                        type=str, default="")    
+                        type=str, default="")
     parser.add_argument("--platform_addr", help="Cluser/Node IP/host", type=str,
                         required=True)
     parser.add_argument("--cluster_name", help="Node Name", type=str,
@@ -89,29 +95,30 @@ def parse_args():
                         default="local")
     parser.add_argument("--node_storage_remote_uri", help="Node Storage Remote URL", type=str,
                         default="")
-    
+
     parser.add_argument("--wait_timeout", help="Time in seconds to wait for platform initialization", type=str,
                         default=900)
-    parser.add_argument("-v", "--verbose", help="Verbose logging", type=str2bool, 
+    parser.add_argument("-v", "--verbose", help="Verbose logging", type=str2bool,
                         default=False)
     parser.add_argument("--log_file", help="Log file for output. stdout when not set", type=str, default="")
-    
-    args = parser.parse_args()    
+
+    args = parser.parse_args()
     if args.admin_password == "":
         raise Exceoption("admin password must be specified")
     return args
+
 
 def get_server_init_data(c, org, user_info):
     # Config Auto Fill
     if not c.get("org_id"):
         c["org_id"] = org["id"]
-        
+
     if not c.get("org_name"):
         c["org_name"] = org["name"]
-        
+
     if not c.get("org_domains"):
         c["org_domains"] = org["domains"]
-        
+
     if not c.get("org_subdomain"):
         c["org_subdomain"] = org["subdomain"]
 
@@ -132,20 +139,20 @@ def get_server_init_data(c, org, user_info):
 
     if not c.get("local_admin_password"):
         c["local_admin_password"] = c["admin_password"]
-        
+
     email_settings = None
 
     # Send Initialization
     data = {
-        "cluster":{
+        "cluster": {
             "name": c["cluster_name"],
-            "admin":{
+            "admin": {
                 "first": c["admin_first_name"],
                 "last": c["admin_last_name"],
                 "password": c["admin_password"],
                 "email": c["admin_email"],
             },
-            "organization":{
+            "organization": {
                 "id": c["org_id"],
                 "name": c["org_name"],
                 "subdomain": c["org_subdomain"],
@@ -153,22 +160,23 @@ def get_server_init_data(c, org, user_info):
             },
             "email_settings": email_settings,
             "metrics_opt_out": c["metrics_opt_out"],
-            "web_settings":{
-                "http":{
+            "web_settings": {
+                "http": {
                     "enabled": c["http_enabled"],
                 }
             }
         },
-        "node":{
+        "node": {
             "name": c["node_name"],
             "local_admin_password": c["local_admin_password"],
-            "storage":{
+            "storage": {
                 "provider": c["node_storage_provider"],
                 "remote_uri": c["node_storage_remote_uri"]
             }
         }
     }
     return data
+
 
 def main():
     formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
@@ -193,11 +201,11 @@ def main():
 
     if c["local_addr"]:
         app_url = "http://" + c["local_addr"]
-    else:       
+    else:
         app_url = "http://" + c["platform_addr"]
-    orion_url = c["aion_url"]
+    aion_url = c["aion_url"]
 
-    org_info = request(orion_url + "/api/iam/organizations/default").json()
+    org_info = request(aion_url + "/api/iam/organizations/default").json()
     LOG.debug("org_info: %s" % json.dumps(org_info))
 
     data = {
@@ -206,7 +214,7 @@ def main():
         "password": c["aion_password"],
         "scope": org_info["id"]
     }
-    r = request(orion_url + "/api/iam/oauth2/token", data=data).json()
+    r = request(aion_url + "/api/iam/oauth2/token", data=data).json()
     access_token = r["access_token"]
     LOG.debug("access_token: %s" % access_token)
 
@@ -214,7 +222,7 @@ def main():
         "Accept": "application/json",
         "Authorization": "Bearer " + access_token,
     }
-    user_info = request(orion_url + "/api/iam/users/my", headers=hdrs).json()
+    user_info = request(aion_url + "/api/iam/users/my", headers=hdrs).json()
     LOG.debug("userInfo: %s" % json.dumps(user_info))
 
     hdrs = {
@@ -225,8 +233,8 @@ def main():
     # Local Storage
     data = {
         "config": {
-            "provider":"local",
-            "remote_uri":""
+            "provider": "local",
+            "remote_uri": ""
         }
     }
     local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
@@ -240,7 +248,7 @@ def main():
     start_time = time.time()
     wait_time = int(c["wait_timeout"])
     if wait_time:
-        LOG.info("Waiting for AION platform intialization to complete...")
+        LOG.info("Waiting for AION platform initialization to complete...")
         while True:
             try:
                 r = request(app_url + "/api/local/initialization").json()
@@ -249,20 +257,21 @@ def main():
                 r = None
 
             if r:
-                LOG.debug("intialization status: %s\n" % json.dumps(r))
+                LOG.debug("initialization status: %s\n" % json.dumps(r))
                 if r["initialized"]:
                     completed = True
                     break
                 if r.get("status") == "error":
                     raise Exception("failed to configure platform")
-                
+
             if (time.time() - start_time) > wait_time:
-                LOG.warning("platform initialized didn't complete in %d seconds. platform wait timed out." % wait_time)
+                LOG.warning(
+                    "platform initialization didn't complete in %d seconds. platform wait timed out." % wait_time)
                 break
             time.sleep(5)
 
     if not completed:
-        raise Exception("platform initialized did not complete")
+        raise Exception("platform initialization did not complete")
 
     org_info = request(app_url + "/api/iam/organizations/default").json()
     LOG.debug("org_info: %s" % json.dumps(org_info))
@@ -282,7 +291,7 @@ def main():
         "Authorization": "Bearer " + app_token,
     }
     data = {
-        "url": orion_url,
+        "url": aion_url,
         "username": c["aion_user"],
         "password": c["aion_password"]
     }
@@ -298,5 +307,6 @@ if __name__ == "__main__":
         sys.exit(str(e))
 
 '''
-python3 setup-aion.py --aion_url "https://spirent.spirentaion.com" --platform_addr "10.109.121.113" --aion_user <user> --aion_password <password> --admin_password <password>
+python3 setup-aion.py --aion_url "https://spirent.spirentaion.com" --platform_addr "10.109.121.113"
+--aion_user <user> --aion_password <password> --admin_password <password>
 '''
