@@ -7,7 +7,7 @@
 
 Run Spirent AION platform instances.  After Terraform apply finishes you will be able to point your browser at the instance_public_ips addresses.
 
-If you would like to configure the Spirent AION platform in a web browser set the variable enable_provisioner=false.  Otherwise when enable_provisioner=true the instance will be configured however license entitlement & product installation should be completed in your web browser (see below).
+If you would like to configure the Spirent AION platform in a web browser set the variable enable_provisioner=false.  When enable_provisioner=true the instance will be configured.  However, license entitlement & product installation will need to be completed in your web browser (see below).  Login to the platform instance https://<your_public_ip> using the values of admin_email and admin_password.
 
 ### Add License Entitlements
 1. From "Settings" <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to "License Manager", "Entitlements"
