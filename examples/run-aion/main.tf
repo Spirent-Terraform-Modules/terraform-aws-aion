@@ -1,43 +1,35 @@
 provider "aws" {
-  region = "us-east-1"
+  region = var.region
 }
 
-
-data "aws_vpc" "default" {
-  default = true
+variable "region" {
+  description = "AWS region"
+  default     = "us-west-2"
 }
 
-module "aion" {
-  source = "../.."
-  vpc_id = data.aws_vpc.default.id
-
-  subnet_id = "subnet-ffe75cb2"
-  # Warning: Using all adddress cidr block to simplify the example. You should limit instance access.
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-
-  key_name         = "stcv_dev_key"
-  private_key_file = "~/.ssh/stcv_dev_key.pem"
-
-  aion_url       = "https://spirent.spirentaion.com"
-  aion_user      = var.aion_user
-  aion_password  = var.aion_password
-  admin_password = var.admin_password
-
-  root_block_device = [
-    {
-      volume_type = "gp2"
-      volume_size = 60
-    }
-  ]
+variable "vpc_id" {
+  description = "VPC ID"
+  default     = "vpc-123456789"
 }
 
-# output "setup_aion_sh" {
-#   description = "Setup AION SH"
-#   value       = module.aion.setup_aion_sh
-# }
+variable "subnet_id" {
+  description = "Management plane subnet ID"
+  default     = "subnet-123456789"
+}
 
-output "instance_public_ips" {
-  value = module.aion.instance_public_ips
+variable "key_name" {
+  description = "AWS SSH key name to assign to each instance"
+  default     = "bootstrap_key"
+}
+
+variable "private_key_file" {
+  description = "AWS key private file"
+  default     = "bootstrap_private_key_file"
+}
+
+variable "aion_url" {
+  description = "AION URL."
+  default     = "https://spirent.spirentaion.com"
 }
 
 variable "aion_user" {
@@ -50,4 +42,34 @@ variable "aion_password" {
 
 variable "admin_password" {
   description = "New cluster admin password. Specify using command line or env variables."
+}
+
+
+module "aion" {
+  source = "../.."
+  vpc_id = var.vpc_id
+
+  subnet_id = var.subnet_id
+  # Warning: Using all address cidr block to simplify the example. You should limit instance access.
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+
+  key_name         = var.key_name
+  private_key_file = var.private_key_file
+
+  aion_url       = var.aion_url
+  aion_user      = var.aion_user
+  aion_password  = var.aion_password
+  admin_password = var.admin_password
+
+  root_block_device = [
+    {
+      volume_type = "gp2"
+      volume_size = 60
+    }
+  ]
+}
+
+output "instance_public_ips" {
+  description = "List of public IP addresses assigned to the instances, if applicable"
+  value       = module.aion.instance_public_ips
 }
