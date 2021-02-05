@@ -14,7 +14,7 @@ If you would like to configure the Spirent AION platform in a web browser set th
 2. Click "Install Entitlements"
 3. Use one of the following methods to add entitlements (#1 is prefered)
    1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
-      Note: Hosted entitlements should be released before destroying the instance.  When entitlements are not released you will need to contact Spirent support to release them for you.
+      **Note:** Hosted entitlements should be released before destroying the instance.  When entitlements are not released you will need to contact Spirent support to release them for you.
    2. Install a license entitlement file obtained from Spirent support
 
 ### Add Products
