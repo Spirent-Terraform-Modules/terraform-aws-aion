@@ -10,7 +10,7 @@ Run Spirent AION platform instances.  After Terraform apply finishes you will be
 If you would like to configure the Spirent AION platform in a web browser set the variable enable_provisioner=false.  Otherwise when enable_provisioner=true the instance will be configured however license entitlement & product installation should be completed in your web browser (see below).
 
 ### Add License Entitlements
-1. Navigate to ![Settings](./images/aion_settings.jpg =32x32) "License Manager" "Entitlements"
+1. Navigate to <img src="./images/aion_settings.jpg" width="32" height="32"/> "License Manager" "Entitlements"
 2. Click on "Install Entitlements"
 3. Use one of the following methods to add entitlements (#1 is prefered)
    1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance
@@ -18,7 +18,7 @@ If you would like to configure the Spirent AION platform in a web browser set th
    2. Install a license entitlement file obtained from Spirent support
 
 ### Add Products
-1. Navigate to ![Settings](./images/aion_settings.jpg =16x16) "Settings" "Add New Products"
+1. Navigate to ![Settings](./images/aion_settings.jpg) "Settings" "Add New Products"
 2. Click "Install New Products"
 3. Select products and versions and click "Install"
 
