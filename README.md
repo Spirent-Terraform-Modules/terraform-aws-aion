@@ -1,27 +1,25 @@
-
 # Spirent AION Platform Terraform
 
 ![Image of Spirent AION](./images/aion.jpg)
 
 ## Description
 
-Run Spirent AION platform instances.  After Terraform apply finishes you will be able to point your browser at the instance_public_ips addresses.
+Run Spirent AION platform instances.  After Terraform apply finishes you will be able to point your browser at the `instance_public_ips` addresses.
 
-If you would like to configure the Spirent AION platform in a web browser set the variable enable_provisioner=false.  When enable_provisioner=true the instance will be configured.  However, license entitlement & product installation will need to be completed in your web browser (see below).  Login to the platform instance https://<your_public_ip> using the values of admin_email and admin_password.
+If you would like to configure the Spirent AION platform in a web browser set the variable `enable_provisioner=false`.  When `enable_provisioner=true` the instance will be configured.  However, license entitlement and product installation will need to be completed in your web browser (see below).  Login to the platform instance https://<your_public_ip> using the values of `admin_email` and `admin_password`.
 
 ### Add License Entitlements
-1. From "Settings" <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to "License Manager", "Entitlements"
-2. Click "Install Entitlements"
+1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _License Manager_, _Entitlements_
+2. Click _Install Entitlements_
 3. Use one of the following methods to add entitlements (#1 is prefered)
    1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
       **Note:** Hosted entitlements should be released before destroying the instance.  When entitlements are not released you will need to contact Spirent support to release them for you.
    2. Install a license entitlement file obtained from Spirent support
 
 ### Add Products
-1. From "Settings" <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to "Settings", "Add New Products"
-2. Click "Install New Products"
-3. Select products and versions and click "Install"
-
+1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _Settings_, _Add New Products_
+2. Click _Install New Products_
+3. Select products and versions and click _Install_
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -38,6 +36,22 @@ If you would like to configure the Spirent AION platform in a web browser set th
 | aws | >= 2.65 |
 | null | n/a |
 | template | n/a |
+
+## Modules
+
+No Modules.
+
+## Resources
+
+| Name |
+|------|
+| [aws_ami](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/data-sources/ami) |
+| [aws_eip_association](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/eip_association) |
+| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/instance) |
+| [aws_network_interface](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/network_interface) |
+| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/security_group) |
+| [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) |
+| [template_file](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) |
 
 ## Inputs
 
@@ -78,7 +92,6 @@ If you would like to configure the Spirent AION platform in a web browser set th
 | instance\_ids | List of instance IDs |
 | instance\_private\_ips | List of private IP addresses assigned to the instances, if applicable |
 | instance\_public\_ips | List of public IP addresses assigned to the instances, if applicable |
-
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 
 ## Block Devices
@@ -86,11 +99,13 @@ If you would like to configure the Spirent AION platform in a web browser set th
 ### Root Block Device
 The root_block_device mapping supports the following:
 
-* delete_on_termination - (Optional) Whether the volume should be destroyed on instance termination. Defaults to true.
-* encrypted - (Optional) Whether to enable volume encryption. Defaults to false. Must be configured to perform drift detection.
-* iops - (Optional) Amount of provisioned IOPS. Only valid for volume_type of io1, io2 or gp3.
-* kms_key_id - (Optional) Amazon Resource Name (ARN) of the KMS Key to use when encrypting the volume. Must be configured to perform drift detection.
-* tags - (Optional) A map of tags to assign to the device.
-* throughput - (Optional) Throughput to provision for a volume in mebibytes per second (MiB/s). This is only valid for volume_type of gp3.
-* volume_size - (Optional) Size of the volume in gibibytes (GiB).
-* volume_type - (Optional) Type of volume. Valid values include standard, gp2, gp3, io1, io2, sc1, or st1. Defaults to gp2.
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| delete_on_termination | Whether the volume should be destroyed on instance termination. | `string` | `true` | no |
+| encrypted | Whether to enable volume encryption. Must be configured to perform drift detection. | `bool` | `false` | no |
+| iops | Amount of provisioned IOPS. Only valid for volume_type of `io1`, `io2` or `gp3`. | `number` | n/a | no |
+| kms_key_id | Amazon Resource Name (ARN) of the KMS Key to use when encrypting the volume. Must be configured to perform drift detection. | `string` | n/a | no |
+| tags | A map of tags to assign to the device. | `map(string)` | `{}` | no |
+| throughput | Throughput to provision for a volume in mebibytes per second (MiB/s). This is only valid for volume_type of `gp3`. | `number` | n/a | no |
+| volume_size | Size of the volume in gibibytes (GiB). | `number` | n/a | no |
+| volume_type | Type of volume. Valid values include `standard`, `gp2`, `gp3`, `io1`, `io2`, `sc1`, or `st1`. | `string` | `gp2` | no |

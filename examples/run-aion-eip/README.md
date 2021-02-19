@@ -2,6 +2,15 @@
 
 Run Spirent AION Platform with an elastic IP.
 
+## Usage
+
+To run this example you need to execute:
+
+    $ terraform init
+    $ terraform plan
+    $ terraform apply
+
+This example will create resources that will incur a cost. Run `terraform destroy` when you don't need these resources.
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -14,6 +23,16 @@ Run Spirent AION Platform with an elastic IP.
 ## Providers
 
 No provider.
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| aion | ../.. |  |
+
+## Resources
+
+No resources.
 
 ## Inputs
 
@@ -35,5 +54,4 @@ No provider.
 | Name | Description |
 |------|-------------|
 | instance\_public\_ips | List of public IP addresses assigned to the instances, if applicable |
-
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
