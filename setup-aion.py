@@ -237,7 +237,23 @@ def main():
             "remote_uri": ""
         }
     }
-    local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
+
+    start_time = time.time()
+    wait_time = int(c["wait_timeout"])
+    # retry 1st app_url request until timeout or success
+    while True:
+        try:
+            local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
+        except Exception as e:
+            local_storage = None
+
+        if local_storage:
+            break
+
+        if (time.time() - start_time) > wait_time:
+            raise Exception("Failed to receive respone from %s" % app_url + "/api/local/storage/test")
+        time.sleep(5)
+        LOG.debug("retrying %s" % app_url + "/api/local/storage/test")
     LOG.debug("localStorage: %s" % json.dumps(local_storage))
 
     data = get_server_init_data(c, org_info, user_info)
