@@ -62,7 +62,7 @@ module "aion" {
   # Warning: Using all address cidr block to simplify the example. You should limit instance access.
   ingress_cidr_blocks = ["0.0.0.0/0"]
   key_name            = var.key_name
-  private_key_file    = var.private_key_ile
+  private_key_file    = var.private_key_file
 
   aion_url       = var.aion_url
   aion_user      = var.aion_user

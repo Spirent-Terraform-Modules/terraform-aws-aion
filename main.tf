@@ -16,7 +16,8 @@ data "aws_ami" "aion" {
 }
 
 resource "aws_security_group" "aion" {
-  name        = "aion"
+  count       = length(var.security_group_ids) > 0 ? 0 : 1
+  name        = "aion-${random_id.uid.id}"
   description = "AION Security Group"
 
   vpc_id = var.vpc_id
@@ -77,6 +78,10 @@ resource "aws_security_group" "aion" {
   }
 }
 
+resource "random_id" "uid" {
+  byte_length = 8
+}
+
 # create AION
 resource "aws_instance" "aion" {
   count         = var.instance_count
@@ -85,9 +90,9 @@ resource "aws_instance" "aion" {
   key_name      = var.key_name
 
   dynamic "root_block_device" {
-    for_each = var.root_block_device
+    for_each = length(var.root_block_device) > 0 ? var.root_block_device : [{}]
     content {
-      delete_on_termination = lookup(root_block_device.value, "delete_on_termination", null)
+      delete_on_termination = lookup(root_block_device.value, "delete_on_termination", true)
       encrypted             = lookup(root_block_device.value, "encrypted", null)
       iops                  = lookup(root_block_device.value, "iops", null)
       kms_key_id            = lookup(root_block_device.value, "kms_key_id", null)
@@ -109,7 +114,7 @@ resource "aws_instance" "aion" {
 resource "aws_network_interface" "mgmt_plane" {
   count           = var.instance_count
   subnet_id       = var.subnet_id
-  security_groups = [aws_security_group.aion.id]
+  security_groups = length(var.security_group_ids) > 0 ? var.security_group_ids : [aws_security_group.aion[0].id]
 }
 
 resource "aws_eip_association" "public_ip" {
@@ -179,4 +184,3 @@ resource "null_resource" "provisioner" {
     ]
   }
 }
-
