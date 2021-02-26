@@ -1,10 +1,10 @@
-# Spirent AION Platform Terraform
+# AWS Spirent AION Platform Terraform
 
 ![Image of Spirent AION](./images/aion.jpg)
 
 ## Description
 
-Run Spirent AION platform instances.  After Terraform apply finishes you will be able to point your browser at the `instance_public_ips` addresses.
+Run [Spirent AION](https://www.spirent.com/products/aion) platform instances.  After Terraform apply finishes you will be able to point your browser at the `instance_public_ips` addresses.
 
 If you would like to configure the Spirent AION platform in a web browser set the variable `enable_provisioner=false`.  When `enable_provisioner=true` the instance will be configured.  However, license entitlement and product installation will need to be completed in your web browser (see below).  Login to the platform instance https://<your_public_ip> using the values of `admin_email` and `admin_password`.
 
@@ -35,6 +35,7 @@ If you would like to configure the Spirent AION platform in a web browser set th
 |------|---------|
 | aws | >= 2.65 |
 | null | n/a |
+| random | n/a |
 | template | n/a |
 
 ## Modules
@@ -45,12 +46,13 @@ No Modules.
 
 | Name |
 |------|
-| [aws_ami](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/data-sources/ami) |
-| [aws_eip_association](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/eip_association) |
-| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/instance) |
-| [aws_network_interface](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/network_interface) |
-| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/2.65/docs/resources/security_group) |
+| [aws_ami](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami) |
+| [aws_eip_association](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eip_association) |
+| [aws_instance](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance) |
+| [aws_network_interface](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/network_interface) |
+| [aws_security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) |
 | [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) |
+| [random_id](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) |
 | [template_file](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) |
 
 ## Inputs
@@ -70,7 +72,7 @@ No Modules.
 | eips | List of management plane elastic IP IDs.  Leave empty if subnet auto assigns IPs. | `list(string)` | `[]` | no |
 | enable\_provisioner | Enable provisioning.  When enabled instances will be initialized with the specified variables. | `bool` | `true` | no |
 | http\_enabled | Allow HTTP access as well as HTTPS.  Normally this is not recommended. | `bool` | `false` | no |
-| ingress\_cidr\_blocks | List of management interface ingress IPv4/IPv6 CIDR ranges | `list(string)` | n/a | yes |
+| ingress\_cidr\_blocks | List of management interface ingress IPv4/IPv6 CIDR ranges.  Set to empty list when using security\_group\_ids. | `list(string)` | n/a | yes |
 | instance\_count | Number of instances to create | `number` | `1` | no |
 | instance\_name\_prefix | Name assigned to the AION platform instance.  An instance number will be appended to the name. | `string` | `"aion-"` | no |
 | instance\_type | AWS instance type | `string` | `"m5.large"` | no |
@@ -82,6 +84,7 @@ No Modules.
 | node\_storage\_remote\_uri | Cluster node storage URI.  Leave blank for default when provider is local | `string` | `""` | no |
 | private\_key\_file | AWS key private file | `string` | n/a | yes |
 | root\_block\_device | Customize details about the root block device of the instance. See Block Devices below for details. | `list(map(string))` | `[]` | no |
+| security\_group\_ids | List of management plane security group IDs.  Leave empty to create a default security group using ingress\_cidr\_blocks. | `list(string)` | `[]` | no |
 | subnet\_id | Management public AWS subnet ID | `string` | n/a | yes |
 | vpc\_id | AWS VPC ID | `string` | n/a | yes |
 
