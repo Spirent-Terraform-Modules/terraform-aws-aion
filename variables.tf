@@ -167,7 +167,7 @@ variable "metrics_opt_out" {
 }
 
 variable "dest_dir" {
-  description = "Destination directory on the instance where provisining files will be copied"
+  description = "Destination directory on the instance where provisioning files will be copied"
   type        = string
   default     = "~"
 }

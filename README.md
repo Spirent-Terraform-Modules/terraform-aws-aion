@@ -68,7 +68,7 @@ No Modules.
 | aion\_user | AION user registered on aion\_url | `string` | n/a | yes |
 | ami | The AION AMI.  When not specified latest AMI will be used. | `string` | `""` | no |
 | cluster\_names | Instance cluster names.  List length must equal instance\_count. | `list(string)` | `[]` | no |
-| dest\_dir | Destination directory on the instance where provisining files will be copied | `string` | `"~"` | no |
+| dest\_dir | Destination directory on the instance where provisioning files will be copied | `string` | `"~"` | no |
 | eips | List of management plane elastic IP IDs.  Leave empty if subnet auto assigns IPs. | `list(string)` | `[]` | no |
 | enable\_provisioner | Enable provisioning.  When enabled instances will be initialized with the specified variables. | `bool` | `true` | no |
 | http\_enabled | Allow HTTP access as well as HTTPS.  Normally this is not recommended. | `bool` | `false` | no |
