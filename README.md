@@ -37,6 +37,7 @@ If you would like to configure the Spirent AION platform in a web browser set th
 | null | n/a |
 | random | n/a |
 | template | n/a |
+| tls | n/a |
 
 ## Modules
 
@@ -54,6 +55,7 @@ No Modules.
 | [null_resource](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) |
 | [random_id](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) |
 | [template_file](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) |
+| [tls_public_key](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/data-sources/public_key) |
 
 ## Inputs
 

@@ -3,15 +3,13 @@
 
 # find latest Spirent AION AMI
 data "aws_ami" "aion" {
-  # TODO: Update with marketplace AMI when released
-
-  owners      = ["712010841178"]
-  most_recent = true
-  # executable_users = ["all"]
+  owners           = ["679593333241"]
+  most_recent      = true
+  executable_users = ["all"]
 
   filter {
     name   = "name"
-    values = ["AION*"]
+    values = ["aion-platform-image-*"]
   }
 }
 
@@ -82,12 +80,25 @@ resource "random_id" "uid" {
   byte_length = 8
 }
 
+data "tls_public_key" "user" {
+  private_key_pem = file(var.private_key_file)
+}
+
+data "template_file" "user_data" {
+  template = file("${path.module}/user_data.tpl")
+  vars = {
+    ssh_auth_key = data.tls_public_key.user.public_key_openssh
+  }
+}
+
 # create AION
 resource "aws_instance" "aion" {
   count         = var.instance_count
   ami           = var.ami != "" ? var.ami : data.aws_ami.aion.id
   instance_type = var.instance_type
   key_name      = var.key_name
+
+  user_data = data.template_file.user_data.rendered
 
   dynamic "root_block_device" {
     for_each = length(var.root_block_device) > 0 ? var.root_block_device : [{}]
