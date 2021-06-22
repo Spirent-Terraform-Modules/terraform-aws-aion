@@ -16,5 +16,7 @@ python3 ${script_file}\
    --node_storage_remote_uri '${node_storage_remote_uri}'\
    --metrics_opt_out '${metrics_opt_out}'\
    --http_enabled '${http_enabled}'\
+   --product_list '${product_list}'\
+   --entitlement_list '$(entitlement_list}''
    --log_file setup-aion.log\
    --verbose 0

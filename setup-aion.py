@@ -4,6 +4,7 @@ import argparse
 import time
 import logging
 import sys
+import copy
 
 HDRS = {
     "Accept": "application/json",
@@ -14,7 +15,7 @@ LOG = logging.getLogger("setup_aion")
 
 
 def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirects=True,
-            files=None, stream=False, verify=True):
+            files=None, stream=False, verify=False):
     if not method:
         if data:
             method = 'POST'
@@ -51,6 +52,13 @@ def str2bool(v):
         return False
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
+def get_app_url(c):
+    if c["local_addr"]:
+        return "http://" + c["local_addr"]
+    else:
+        return "http://" + c["platform_addr"]
 
 
 def parse_args():
@@ -95,6 +103,15 @@ def parse_args():
                         default="local")
     parser.add_argument("--node_storage_remote_uri", help="Node Storage Remote URL", type=str,
                         default="")
+
+    parser.add_argument("--product_list", help="Product list \"[{'name':'product-name', 'version':'0.0'}" , type=str,
+                        default="")
+    parser.add_argument("--deploy_location_name", help="Deploy location name", type=str,
+                        default="location1")
+
+    parser.add_argument("--lic_list", help="License list \"[{'name':'product-name'}" , type=str,
+                        default="")
+
 
     parser.add_argument("--wait_timeout", help="Time in seconds to wait for platform initialization", type=str,
                         default=900)
@@ -178,87 +195,53 @@ def get_server_init_data(c, org, user_info):
     return data
 
 
-def main():
-    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
-    handler = logging.StreamHandler()
-    handler.setFormatter(formatter)
-    LOG.addHandler(handler)
-
-    args = parse_args()
-
-    if args.verbose:
-        LOG.setLevel(logging.DEBUG)
-    else:
-        LOG.setLevel(logging.INFO)
-
-    if args.log_file:
-        log_handler = logging.FileHandler(args.log_file)
-        log_handler.setFormatter(formatter)
-        LOG.addHandler(log_handler)
-
-    c = args.__dict__
-    LOG.debug("Config: %s" % json.dumps(c))
-
-    if c["local_addr"]:
-        app_url = "http://" + c["local_addr"]
-    else:
-        app_url = "http://" + c["platform_addr"]
-    aion_url = c["aion_url"]
-
-    org_info = request(aion_url + "/api/iam/organizations/default").json()
-    LOG.debug("org_info: %s" % json.dumps(org_info))
-
-    data = {
-        "grant_type": "password",
-        "username": c["aion_user"],
-        "password": c["aion_password"],
-        "scope": org_info["id"]
-    }
-    r = request(aion_url + "/api/iam/oauth2/token", data=data).json()
-    access_token = r["access_token"]
-    LOG.debug("access_token: %s" % access_token)
-
-    hdrs = {
-        "Accept": "application/json",
-        "Authorization": "Bearer " + access_token,
-    }
-    user_info = request(aion_url + "/api/iam/users/my", headers=hdrs).json()
-    LOG.debug("userInfo: %s" % json.dumps(user_info))
+def initialize_platform(c, org_info, user_info):
+    app_url = get_app_url(c)
 
     hdrs = {
         "Accept": "application/json",
         "Content-Type": "application/json",
     }
 
-    # Local Storage
+    wait_time = int(c["wait_timeout"])
+
+    init_data = get_server_init_data(c, org_info, user_info)
+
+
+    # retry 1st app_url request until timeout or success
+    start_time = time.time()
+    while True:
+        try:
+            r = request(app_url + "/api/local/initialization").json()
+        except Exception as e:
+            r = None
+
+        if r:
+            break
+
+        if (time.time() - start_time) > wait_time:
+            raise Exception("Failed to receive respone from %s" %
+                            app_url + "/api/local/initialization")
+        time.sleep(5)
+        LOG.debug("retrying %s" % app_url + "/api/local/initialization")
+
+    LOG.debug("intialization: %s" % json.dumps(r))
+    if r["initialized"]:
+        LOG.debug("platform already initialized")
+        return
+
     data = {
         "config": {
             "provider": "local",
             "remote_uri": ""
         }
     }
-
-    start_time = time.time()
-    wait_time = int(c["wait_timeout"])
-    # retry 1st app_url request until timeout or success
-    while True:
-        try:
-            local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
-        except Exception as e:
-            local_storage = None
-
-        if local_storage:
-            break
-
-        if (time.time() - start_time) > wait_time:
-            raise Exception("Failed to receive respone from %s" % app_url + "/api/local/storage/test")
-        time.sleep(5)
-        LOG.debug("retrying %s" % app_url + "/api/local/storage/test")
+    local_storage = request(app_url + "/api/local/storage/test", headers=hdrs, data=data).json()
     LOG.debug("localStorage: %s" % json.dumps(local_storage))
 
-    data = get_server_init_data(c, org_info, user_info)
-    LOG.debug("ServerFormingNewCluster: %s" % json.dumps(data))
-    r = request(app_url + "/api/local/initialization/server-forming-new-cluster", headers=hdrs, data=data)
+    LOG.debug("ServerFormingNewCluster: %s" % json.dumps(init_data))
+    r = request(app_url + "/api/local/initialization/server-forming-new-cluster",
+                headers=hdrs, data=init_data)
 
     completed = False
     start_time = time.time()
@@ -289,6 +272,167 @@ def main():
     if not completed:
         raise Exception("platform initialization did not complete")
 
+    return
+
+
+def install_products(app_url, app_token, new_product_list):
+    hdrs = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + app_token,
+    }
+
+    products = request(app_url + "/api/cluster/temeva-proxy/api/inv/products",
+                       headers=hdrs).json()
+    LOG.debug("products: %s" % json.dumps(products))
+
+    install_products = []
+    for np in new_product_list:
+        name = np.get("name")
+        version = np.get("version")
+        id = None
+        for p in products:
+            if p.get("name") == name:
+                version_summaries = p.get("version_summaries")
+                if not version_summaries:
+                    continue
+                for v in version_summaries:
+                    if not version or v.get("version") == version:
+                        install_products.append({
+                            "name": p["name"],
+                            "product_id": p["id"],
+                            "version": v.get("version"),
+                            "version_id": v.get("id")
+                        })
+
+    # get node
+    nodes = request(app_url + "/api/cluster/nodes?view=identity-only",
+                  headers=hdrs).json()
+    if not nodes:
+        LOG.error("no cluster nodes found. skip product install")
+        return
+    LOG.debug("nodes: %s" % json.dumps(nodes))
+
+    for p in install_products:
+        data = {
+            "type": "product",
+            "product": {
+                "product_version_id": p["version_id"]
+            }
+        }
+        LOG.debug("syncing product %s" % p["name"])
+        request(app_url + "/api/cluster/updates/x/start-sync",
+                headers=hdrs, data=data)
+
+        # wait for sync...
+
+        data = {
+            "id": None,
+            "product_version":{
+                "artifacts":[],
+                "id": p["version_id"],
+                "version": None,
+                "upgrade_available": False
+            },
+            "initial_location_name": c["deploy_location_name"],
+            "state": "initializing",
+            "error": None
+        }
+        temp_hdrs = copy.deepcopy(hdrs)
+        LOG.info("deploying product %s" % p["name"])
+        r = request(app_url + "/api/cluster/node-proxy/" +
+                    nodes[0]["id"] + "/api/local/product-instances",
+                    headers=temp_hdrs, data=data).json()
+        LOG.debug("deplogy product response: %s" % json.dumps(r))
+
+
+def install_lic(app_url, app_token, new_lic_list):
+    hdrs = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + app_token,
+    }
+
+    workspaces = request(app_url +
+                         "/api/cluster/temeva-proxy/api/iam/workspaces",
+                          headers=hdrs).json()
+    LOG.debug("workspaces: %s" % json.dumps(workspaces))
+
+    app_id = "31f135bc9bd04d1faa15940dd3564a29%2Ce8c43606b3924efbaa86f82bc47dd279%2Ce363f6c9c3a0467eae31f24a99ff2044%2C8b5f9a0d676e49f1a8249a792717b306"
+
+    entitlements = request(app_url +
+                           "/api/cluster/temeva-proxy/api/lic/entitlements?application_id=" +
+                           app_id + "&search=&entdetail=summary&show_hardware=false",
+                           headers=hdrs).json()
+    LOG.debug("entitlements: %s" % json.dumps(entitlements))
+
+
+    local_entitlements = request(app_url + "/api/lic/entitlements?" +
+                                 "workspace_id=all&entdetail=summary&show_hardware=false&" +
+                                 "show_software=true&include_set=15",
+                                 headers=hdrs).json()
+    LOG.debug("local entitlements: %s" % json.dumps(local_entitlements))
+
+    # find entitlement ids
+    entitlement_ids = ["c1a8c2b055e64a5a9772741899a69bba"]
+
+    data = {
+        "host_id" : host_id,
+        "entitlement_ids": entitlement_ids
+    }
+    bulk_host = request(app_url  + "/api/lic/entitlements/x/bulk-host",
+                        headers=hdrs, data=data).json()
+
+    start_sync = request(app_url  + "/api/cluster/updates/x/start-sync",
+                        headers=hdrs).json()
+
+
+def main():
+    formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s')
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    LOG.addHandler(handler)
+
+    args = parse_args()
+
+    if args.verbose:
+        LOG.setLevel(logging.DEBUG)
+    else:
+        LOG.setLevel(logging.INFO)
+
+    if args.log_file:
+        log_handler = logging.FileHandler(args.log_file)
+        log_handler.setFormatter(formatter)
+        LOG.addHandler(log_handler)
+
+    c = args.__dict__
+    LOG.debug("Config: %s" % json.dumps(c))
+
+    aion_url = c["aion_url"]
+
+    org_info = request(aion_url + "/api/iam/organizations/default").json()
+    LOG.debug("org_info: %s" % json.dumps(org_info))
+
+    data = {
+        "grant_type": "password",
+        "username": c["aion_user"],
+        "password": c["aion_password"],
+        "scope": org_info["id"]
+    }
+    r = request(aion_url + "/api/iam/oauth2/token", data=data).json()
+    access_token = r["access_token"]
+    LOG.debug("access_token: %s" % access_token)
+
+    hdrs = {
+        "Accept": "application/json",
+        "Authorization": "Bearer " + access_token,
+    }
+    user_info = request(aion_url + "/api/iam/users/my", headers=hdrs).json()
+    LOG.debug("userInfo: %s" % json.dumps(user_info))
+
+    initialize_platform(c, org_info, user_info)
+
+    app_url = get_app_url(c)
     org_info = request(app_url + "/api/iam/organizations/default").json()
     LOG.debug("org_info: %s" % json.dumps(org_info))
 
@@ -312,6 +456,18 @@ def main():
         "password": c["aion_password"]
     }
     request(app_url + "/api/cluster/settings/temeva/login", headers=hdrs, data=data)
+
+    new_product_list = c.get('product_list')
+    if new_product_list:
+        new_product_list = json.loads(new_product_list)
+        install_products(app_url, app_token, new_product_list)
+
+
+    new_lic_list = c.get('lic_list')
+    # get license list
+    if new_lic_list:
+        new_product_list = json.loads(new_lic_list)
+        install_lic(app_url, app_token, new_lic_list)
 
 
 if __name__ == "__main__":

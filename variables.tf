@@ -171,3 +171,16 @@ variable "dest_dir" {
   type        = string
   default     = "~"
 }
+
+variable "product_list" {
+  description = "Install AION products. See Product List below for details."
+  type        = list(map(string))
+  default     = []
+}
+
+variable "entitlement_list" {
+  description = "Install hosted entitlements from organization's AION platform. See Entitlement List below for details."
+  type        = list(map(string))
+  default     = []
+}
+

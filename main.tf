@@ -154,6 +154,8 @@ data "template_file" "setup_aion" {
     node_storage_remote_uri = var.node_storage_remote_uri
     metrics_opt_out         = var.metrics_opt_out
     http_enabled            = var.http_enabled
+    product_list            = jsonencode(var.product_list)
+    entitlement_list        = jsonencode(var.entitlement_list)
   }
 }
 
