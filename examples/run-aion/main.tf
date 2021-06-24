@@ -67,6 +67,12 @@ module "aion" {
       volume_size = 60
     }
   ]
+
+  product_list = [
+    {
+      name = "STC LabServer"
+    }
+  ]
 }
 
 output "instance_public_ips" {

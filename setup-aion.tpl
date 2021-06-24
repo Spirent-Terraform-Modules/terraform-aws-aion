@@ -17,6 +17,6 @@ python3 ${script_file}\
    --metrics_opt_out '${metrics_opt_out}'\
    --http_enabled '${http_enabled}'\
    --product_list '${product_list}'\
-   --entitlement_list '$(entitlement_list}''
+   --entitlement_list '${entitlement_list}'\
    --log_file setup-aion.log\
    --verbose 0

@@ -52,6 +52,14 @@ resource "aws_security_group" "aion" {
     cidr_blocks = var.ingress_cidr_blocks
   }
 
+  # LabServer Session Manager
+  ingress {
+    from_port   = 49000
+    to_port     = 50000
+    protocol    = "tcp"
+    cidr_blocks = var.ingress_cidr_blocks
+  }
+
   # ICMP
   ingress {
     from_port   = -1
@@ -159,19 +167,37 @@ data "template_file" "setup_aion" {
   }
 }
 
-# output "setup_aion_sh" {
-#   description = "Setup AION script"
-#   value       = data.template_file.setup_aion.*.rendered
-# }
+data "template_file" "release_aion" {
+  count    = var.enable_provisioner ? var.instance_count : 0
+  template = file("${path.module}/release-aion.tpl")
+  vars = {
+    script_file          = "${var.dest_dir}/release-aion.py"
+    platform_addr        = aws_instance.aion[count.index].public_ip
+    aion_url             = var.aion_url
+    aion_user            = var.aion_user
+    aion_password        = var.aion_password
+    admin_email          = var.admin_email
+    admin_password       = var.admin_password
+    local_admin_password = var.local_admin_password
+  }
+}
 
 # provison the AION VM
 resource "null_resource" "provisioner" {
   count = var.enable_provisioner ? var.instance_count : 0
+  # triggers = {
+  #   dest_dir    = var.dest_dir
+  #   host        = aws_instance.aion[count.index].public_ip
+  #   private_key = file(var.private_key_file)
+  # }
   connection {
+    # host        = self.triggers.host
     host        = aws_instance.aion[count.index].public_ip
     type        = "ssh"
     user        = "debian"
     private_key = file(var.private_key_file)
+    # private_key = self.triggers.private_key
+    agent = false
   }
 
   # force provisioners to rerun
@@ -190,10 +216,28 @@ resource "null_resource" "provisioner" {
     destination = "${var.dest_dir}/setup-aion.sh"
   }
 
+  provisioner "file" {
+    source      = "${path.module}/release-aion.py"
+    destination = "${var.dest_dir}/release-aion.py"
+  }
+
+  provisioner "file" {
+    content     = data.template_file.release_aion[count.index].rendered
+    destination = "${var.dest_dir}/release-aion.sh"
+  }
+
   # run setup AION
   provisioner "remote-exec" {
     inline = [
       "bash ${var.dest_dir}/setup-aion.sh"
     ]
   }
+
+  # destroy provisioner
+  # provisioner "remote-exec" {
+  #   when    = destroy
+  #   inline = [
+  #     "bash ${self.triggers.dest_dir}/release-aion.sh"
+  #   ]
+  # }
 }

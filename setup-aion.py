@@ -29,7 +29,7 @@ def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirect
         prepreq = s.prepare_request(req)
         resp = s.send(prepreq, timeout=15, allow_redirects=allow_redirects, stream=stream, verify=verify)
         if not resp.ok:
-            raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), str(resp.content)))
+            raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), str(resp.text)))
         return resp
 
 

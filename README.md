@@ -73,6 +73,7 @@ No Modules.
 | dest\_dir | Destination directory on the instance where provisioning files will be copied | `string` | `"~"` | no |
 | eips | List of management plane elastic IP IDs.  Leave empty if subnet auto assigns IPs. | `list(string)` | `[]` | no |
 | enable\_provisioner | Enable provisioning.  When enabled instances will be initialized with the specified variables. | `bool` | `true` | no |
+| entitlement\_list | Install hosted entitlements from organization's AION platform. See Entitlement List below for details. | `list(map(string))` | `[]` | no |
 | http\_enabled | Allow HTTP access as well as HTTPS.  Normally this is not recommended. | `bool` | `false` | no |
 | ingress\_cidr\_blocks | List of management interface ingress IPv4/IPv6 CIDR ranges.  Set to empty list when using security\_group\_ids. | `list(string)` | n/a | yes |
 | instance\_count | Number of instances to create | `number` | `1` | no |
@@ -85,6 +86,7 @@ No Modules.
 | node\_storage\_provider | Cluster node storage provider | `string` | `"local"` | no |
 | node\_storage\_remote\_uri | Cluster node storage URI.  Leave blank for default when provider is local | `string` | `""` | no |
 | private\_key\_file | AWS key private file | `string` | n/a | yes |
+| product\_list | Install AION products. See Product List below for details. | `list(map(string))` | `[]` | no |
 | root\_block\_device | Customize details about the root block device of the instance. See Block Devices below for details. | `list(map(string))` | `[]` | no |
 | security\_group\_ids | List of management plane security group IDs.  Leave empty to create a default security group using ingress\_cidr\_blocks. | `list(string)` | `[]` | no |
 | subnet\_id | Management public AWS subnet ID | `string` | n/a | yes |
