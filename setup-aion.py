@@ -5,6 +5,7 @@ import time
 import logging
 import sys
 import copy
+import ast
 
 HDRS = {
     "Accept": "application/json",
@@ -28,7 +29,7 @@ def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirect
         prepreq = s.prepare_request(req)
         resp = s.send(prepreq, timeout=15, allow_redirects=allow_redirects, stream=stream, verify=verify)
         if not resp.ok:
-            raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), resp.content))
+            raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), str(resp.content)))
         return resp
 
 
@@ -109,7 +110,7 @@ def parse_args():
     parser.add_argument("--deploy_location_name", help="Deploy location name", type=str,
                         default="location1")
 
-    parser.add_argument("--lic_list", help="License list \"[{'name':'product-name'}" , type=str,
+    parser.add_argument("--entitlement_list", help="License entitlement list \"[{'name':'entitlement-name'}" , type=str,
                         default="")
 
 
@@ -275,7 +276,7 @@ def initialize_platform(c, org_info, user_info):
     return
 
 
-def install_products(app_url, app_token, new_product_list):
+def install_products(app_url, app_token, new_product_list, deploy_location):
     hdrs = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -324,7 +325,25 @@ def install_products(app_url, app_token, new_product_list):
         request(app_url + "/api/cluster/updates/x/start-sync",
                 headers=hdrs, data=data)
 
-        # wait for sync...
+        # wait for product xsync...
+        start_time = time.time()
+        product_ok = False
+        while True:
+          local_products = request(app_url + "/api/inv/products",
+                                   headers=hdrs).json()
+          for lp in local_products:
+            if p["product_id"] != lp["id"]:
+              continue
+            for vs in lp.get("version_summaries", []):
+              if p["version_id"] == vs["id"]:
+                product_ok = True
+                break
+          if product_ok:
+            break
+          if (time.time() - start_time) > 20:
+            break
+          time.sleep(5)
+          LOG.debug("retrying product list %s" % app_url + "/api/inv/products")
 
         data = {
             "id": None,
@@ -334,7 +353,7 @@ def install_products(app_url, app_token, new_product_list):
                 "version": None,
                 "upgrade_available": False
             },
-            "initial_location_name": c["deploy_location_name"],
+            "initial_location_name": deploy_location,
             "state": "initializing",
             "error": None
         }
@@ -346,45 +365,103 @@ def install_products(app_url, app_token, new_product_list):
         LOG.debug("deplogy product response: %s" % json.dumps(r))
 
 
-def install_lic(app_url, app_token, new_lic_list):
+def entitlement_match(new_entitlement_list, e):
+  if e["disabled"]:
+    return -1
+
+  details = ast.literal_eval(e["details"])
+  for i, ne in enumerate(new_entitlement_list):
+    if ne.get("id") == e.get("id"):
+      # if the id matches don't check anything else
+      return i
+    if ne.get("name") == details.get("license_id"):
+      LOG.debug("match found entitlement license_id %s" % details.get("license_id"))
+      count = ne.get("count")
+      LOG.debug("match count %s details=%s" % (str(count), json.dumps(details)))
+      if count and str(count) != str(details.get("max_concurrency")):
+        continue
+      if details["concurrent_host_limit"] <= len(e["hosted_entitlements"]):
+        continue
+      return i
+
+  return -1
+
+
+def install_entitlements(aion_url, access_token, app_url, app_token, platform_addr, new_entitlement_list):
     hdrs = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": "Bearer " + app_token,
     }
 
-    workspaces = request(app_url +
-                         "/api/cluster/temeva-proxy/api/iam/workspaces",
+    workspaces = request(app_url + "/api/cluster/temeva-proxy/api/iam/workspaces",
                           headers=hdrs).json()
     LOG.debug("workspaces: %s" % json.dumps(workspaces))
 
+    # Application ID doesn't seem to be returned by APIs ???  Use static ID
     app_id = "31f135bc9bd04d1faa15940dd3564a29%2Ce8c43606b3924efbaa86f82bc47dd279%2Ce363f6c9c3a0467eae31f24a99ff2044%2C8b5f9a0d676e49f1a8249a792717b306"
 
     entitlements = request(app_url +
                            "/api/cluster/temeva-proxy/api/lic/entitlements?application_id=" +
                            app_id + "&search=&entdetail=summary&show_hardware=false",
                            headers=hdrs).json()
-    LOG.debug("entitlements: %s" % json.dumps(entitlements))
-
+    LOG.debug("entitlements: %s" % json.dumps(entitlements, indent=4))
 
     local_entitlements = request(app_url + "/api/lic/entitlements?" +
                                  "workspace_id=all&entdetail=summary&show_hardware=false&" +
                                  "show_software=true&include_set=15",
                                  headers=hdrs).json()
-    LOG.debug("local entitlements: %s" % json.dumps(local_entitlements))
+    LOG.debug("local entitlements: %s" % json.dumps(local_entitlements, indent=4))
 
-    # find entitlement ids
-    entitlement_ids = ["c1a8c2b055e64a5a9772741899a69bba"]
+    entitlement_ids = []
+    match_list = list(new_entitlement_list)
+    LOG.debug("checking for match: %s" % json.dumps(match_list))
+    for e in entitlements:
+      mi = entitlement_match(match_list, e)
+      if mi >= 0:
+        entitlement_ids.append(e["id"])
+        del match_list[mi]
+        if not match_list:
+          break
 
+    if match_list:
+      LOG.warning("unable to find entitlements: %s" % json.dumps(match_list))
+
+    if not entitlement_ids:
+      LOG.debug("no entitlements to install")
+      return
+
+    LOG.info("installing entitlements %s" % ",".join(entitlement_ids))
+    cluster = request(app_url + "/api/cluster/clusters/my",
+                      headers=hdrs).json()
+    aion_hdrs = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token,
+        "Origin": "https://" + platform_addr,
+        "Referer": "https://" + platform_addr + "/"
+    }
+    resp = request(aion_url  + "/api/lic/entitlements/x/bulk-host",
+                   headers=aion_hdrs, method="OPTIONS")
+
+    aion_hdrs = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": "Bearer " + access_token
+    }
+    host_id = cluster["id"]
     data = {
         "host_id" : host_id,
         "entitlement_ids": entitlement_ids
     }
-    bulk_host = request(app_url  + "/api/lic/entitlements/x/bulk-host",
-                        headers=hdrs, data=data).json()
+    bulk_host = request(aion_url  + "/api/lic/entitlements/x/bulk-host",
+                        headers=aion_hdrs, data=data).json()
 
+    data = {
+        "type": "entitlement"
+    }
     start_sync = request(app_url  + "/api/cluster/updates/x/start-sync",
-                        headers=hdrs).json()
+                         headers=hdrs, data=data).json()
 
 
 def main():
@@ -460,14 +537,12 @@ def main():
     new_product_list = c.get('product_list')
     if new_product_list:
         new_product_list = json.loads(new_product_list)
-        install_products(app_url, app_token, new_product_list)
+        install_products(app_url, app_token, new_product_list, c["deploy_location_name"])
 
-
-    new_lic_list = c.get('lic_list')
-    # get license list
-    if new_lic_list:
-        new_product_list = json.loads(new_lic_list)
-        install_lic(app_url, app_token, new_lic_list)
+    new_entitlement_list = c.get('entitlement_list')
+    if new_entitlement_list:
+        new_entitlement_list = json.loads(new_entitlement_list)
+        install_entitlements(aion_url, access_token, app_url, app_token, c["platform_addr"], new_entitlement_list)
 
 
 if __name__ == "__main__":
