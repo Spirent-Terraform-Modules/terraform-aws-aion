@@ -60,11 +60,34 @@ module "aion" {
   aion_user      = var.aion_user
   aion_password  = var.aion_password
   admin_password = var.admin_password
+  http_enabled   = true
 
+  instance_type = "m5.xlarge"
   root_block_device = [
     {
       volume_type = "gp2"
       volume_size = 60
+    }
+  ]
+
+  deploy_location = "labserver"
+  deploy_products = [
+    {
+      name    = "STC LabServer"
+      version = "5.20.0032"
+    }
+  ]
+
+  entitlements = [
+    {
+      product = "Spirent TestCenter"
+      license = "Virtual High Scale Bandwidth"
+      number  = 1000
+    },
+    {
+      product = "Spirent TestCenter"
+      license = "Access"
+      number  = 100
     }
   ]
 }

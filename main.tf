@@ -162,8 +162,9 @@ data "template_file" "setup_aion" {
     node_storage_remote_uri = var.node_storage_remote_uri
     metrics_opt_out         = var.metrics_opt_out
     http_enabled            = var.http_enabled
-    product_list            = jsonencode(var.product_list)
-    entitlement_list        = jsonencode(var.entitlement_list)
+    deploy_location         = var.deploy_location
+    deploy_products         = jsonencode(var.deploy_products)
+    entitlements            = jsonencode(var.entitlements)
   }
 }
 
@@ -185,19 +186,17 @@ data "template_file" "release_aion" {
 # provison the AION VM
 resource "null_resource" "provisioner" {
   count = var.enable_provisioner ? var.instance_count : 0
-  # triggers = {
-  #   dest_dir    = var.dest_dir
-  #   host        = aws_instance.aion[count.index].public_ip
-  #   private_key = file(var.private_key_file)
-  # }
-  connection {
-    # host        = self.triggers.host
+  triggers = {
+    dest_dir    = var.dest_dir
     host        = aws_instance.aion[count.index].public_ip
+    private_key = file(var.private_key_file)
+  }
+  connection {
+    host        = self.triggers.host
     type        = "ssh"
     user        = "debian"
-    private_key = file(var.private_key_file)
-    # private_key = self.triggers.private_key
-    agent = false
+    private_key = self.triggers.private_key
+    agent       = false
   }
 
   # force provisioners to rerun
@@ -234,10 +233,10 @@ resource "null_resource" "provisioner" {
   }
 
   # destroy provisioner
-  # provisioner "remote-exec" {
-  #   when    = destroy
-  #   inline = [
-  #     "bash ${self.triggers.dest_dir}/release-aion.sh"
-  #   ]
-  # }
+  provisioner "remote-exec" {
+    when = destroy
+    inline = [
+      "bash ${self.triggers.dest_dir}/release-aion.sh"
+    ]
+  }
 }

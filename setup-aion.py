@@ -27,7 +27,7 @@ def request(url, data=None, method=None, headers=HDRS, params={}, allow_redirect
     with requests.Session() as s:
         req = requests.Request(method, url, headers=headers, params=params, data=data, files=files)
         prepreq = s.prepare_request(req)
-        resp = s.send(prepreq, timeout=15, allow_redirects=allow_redirects, stream=stream, verify=verify)
+        resp = s.send(prepreq, timeout=60, allow_redirects=allow_redirects, stream=stream, verify=verify)
         if not resp.ok:
             raise Exception("request error: url:%s, code:%s, data:%s" % (url, str(resp.status_code), str(resp.text)))
         return resp
@@ -105,14 +105,12 @@ def parse_args():
     parser.add_argument("--node_storage_remote_uri", help="Node Storage Remote URL", type=str,
                         default="")
 
-    parser.add_argument("--product_list", help="Product list \"[{'name':'product-name', 'version':'0.0'}" , type=str,
-                        default="")
-    parser.add_argument("--deploy_location_name", help="Deploy location name", type=str,
+    parser.add_argument("--deploy_location", help="Deploy location name", type=str,
                         default="location1")
-
-    parser.add_argument("--entitlement_list", help="License entitlement list \"[{'name':'entitlement-name'}" , type=str,
+    parser.add_argument("--deploy_products", help="Deploy product list \'[{\"name\":\"product-name\", \"version\":\"0.0\"}]\'", type=str,
                         default="")
-
+    parser.add_argument("--entitlements", help="License entitlement list \'[{\"product\":\"product-name\", \"license\":\"license-name\", \"number\":100}]\'", type=str,
+                        default="")
 
     parser.add_argument("--wait_timeout", help="Time in seconds to wait for platform initialization", type=str,
                         default=900)
@@ -208,7 +206,6 @@ def initialize_platform(c, org_info, user_info):
 
     init_data = get_server_init_data(c, org_info, user_info)
 
-
     # retry 1st app_url request until timeout or success
     start_time = time.time()
     while True:
@@ -282,10 +279,11 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
         "Content-Type": "application/json",
         "Authorization": "Bearer " + app_token,
     }
+    LOG.info("install products: %s" % json.dumps(new_product_list, indent=4))
 
     products = request(app_url + "/api/cluster/temeva-proxy/api/inv/products",
                        headers=hdrs).json()
-    LOG.debug("products: %s" % json.dumps(products))
+    LOG.debug("available products: %s" % json.dumps(products, indent=4))
 
     install_products = []
     for np in new_product_list:
@@ -308,7 +306,7 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
 
     # get node
     nodes = request(app_url + "/api/cluster/nodes?view=identity-only",
-                  headers=hdrs).json()
+                    headers=hdrs).json()
     if not nodes:
         LOG.error("no cluster nodes found. skip product install")
         return
@@ -321,34 +319,35 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
                 "product_version_id": p["version_id"]
             }
         }
-        LOG.debug("syncing product %s" % p["name"])
-        request(app_url + "/api/cluster/updates/x/start-sync",
-                headers=hdrs, data=data)
+        LOG.info("sync product %s" % (p["name"]))
+        sync = request(app_url + "/api/cluster/updates/x/start-sync",
+                       headers=hdrs, data=data).json()
+        LOG.debug("sync: %s" % json.dumps(sync))
 
-        # wait for product xsync...
+        # wait for product sync...
         start_time = time.time()
         product_ok = False
         while True:
-          local_products = request(app_url + "/api/inv/products",
-                                   headers=hdrs).json()
-          for lp in local_products:
-            if p["product_id"] != lp["id"]:
-              continue
-            for vs in lp.get("version_summaries", []):
-              if p["version_id"] == vs["id"]:
-                product_ok = True
+            time.sleep(5)
+            local_products = request(app_url + "/api/inv/products",
+                                     headers=hdrs).json()
+            for lp in local_products:
+                if p["product_id"] != lp["id"]:
+                    continue
+                for vs in lp.get("version_summaries", []):
+                    if p["version_id"] == vs["id"]:
+                        product_ok = True
+                        break
+            if product_ok:
                 break
-          if product_ok:
-            break
-          if (time.time() - start_time) > 20:
-            break
-          time.sleep(5)
-          LOG.debug("retrying product list %s" % app_url + "/api/inv/products")
+            if (time.time() - start_time) > 30:
+                break
+            LOG.debug("retrying product list %s" % app_url + "/api/inv/products")
 
         data = {
             "id": None,
-            "product_version":{
-                "artifacts":[],
+            "product_version": {
+                "artifacts": [],
                 "id": p["version_id"],
                 "version": None,
                 "upgrade_available": False
@@ -358,33 +357,42 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
             "error": None
         }
         temp_hdrs = copy.deepcopy(hdrs)
-        LOG.info("deploying product %s" % p["name"])
-        r = request(app_url + "/api/cluster/node-proxy/" +
-                    nodes[0]["id"] + "/api/local/product-instances",
-                    headers=temp_hdrs, data=data).json()
+        LOG.info("deploying product %s" % (p["name"]))
+        LOG.debug("deploying product %s data: %s" % (p["name"], data))
+        try:
+            # single node
+            r = request(app_url + "/api/local/product-instances",
+                        headers=temp_hdrs, data=data).json()
+        except Exception as e:
+            LOG.debug("product-instances exception: %s" % str(e))
+            # multi node
+            r = request(app_url + "/api/cluster/node-proxy/" +
+                        nodes[0]["id"] + "/api/local/product-instances",
+                        headers=temp_hdrs, data=data).json()
+
         LOG.debug("deplogy product response: %s" % json.dumps(r))
 
 
 def entitlement_match(new_entitlement_list, e):
-  if e["disabled"]:
+    if e["disabled"]:
+        return -1
+
+    details = ast.literal_eval(e["details"])
+    for i, ne in enumerate(new_entitlement_list):
+        if ne.get("id") == e.get("id"):
+            # if the id matches don't check anything else
+            return i
+        product = ne.get("product")
+        if product and product != details.get("application_name"):
+            continue
+        count = ne.get("number")
+        if count and str(count) != str(details.get("max_concurrency")):
+            continue
+        if ne.get("license") == details.get("license_id"):
+            if details["concurrent_host_limit"] <= len(e["hosted_entitlements"]):
+                continue
+            return i
     return -1
-
-  details = ast.literal_eval(e["details"])
-  for i, ne in enumerate(new_entitlement_list):
-    if ne.get("id") == e.get("id"):
-      # if the id matches don't check anything else
-      return i
-    if ne.get("name") == details.get("license_id"):
-      LOG.debug("match found entitlement license_id %s" % details.get("license_id"))
-      count = ne.get("count")
-      LOG.debug("match count %s details=%s" % (str(count), json.dumps(details)))
-      if count and str(count) != str(details.get("max_concurrency")):
-        continue
-      if details["concurrent_host_limit"] <= len(e["hosted_entitlements"]):
-        continue
-      return i
-
-  return -1
 
 
 def install_entitlements(aion_url, access_token, app_url, app_token, platform_addr, new_entitlement_list):
@@ -394,8 +402,10 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
         "Authorization": "Bearer " + app_token,
     }
 
+    LOG.info("install entitlements: %s" % json.dumps(new_entitlement_list, indent=4))
+
     workspaces = request(app_url + "/api/cluster/temeva-proxy/api/iam/workspaces",
-                          headers=hdrs).json()
+                         headers=hdrs).json()
     LOG.debug("workspaces: %s" % json.dumps(workspaces))
 
     # Application ID doesn't seem to be returned by APIs ???  Use static ID
@@ -417,21 +427,20 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
     match_list = list(new_entitlement_list)
     LOG.debug("checking for match: %s" % json.dumps(match_list))
     for e in entitlements:
-      mi = entitlement_match(match_list, e)
-      if mi >= 0:
-        entitlement_ids.append(e["id"])
-        del match_list[mi]
-        if not match_list:
-          break
+        mi = entitlement_match(match_list, e)
+        if mi >= 0:
+            entitlement_ids.append(e["id"])
+            del match_list[mi]
+            if not match_list:
+                break
 
     if match_list:
-      LOG.warning("unable to find entitlements: %s" % json.dumps(match_list))
+        LOG.warning("unable to find entitlements: %s" % json.dumps(match_list))
 
     if not entitlement_ids:
-      LOG.debug("no entitlements to install")
-      return
+        return
 
-    LOG.info("installing entitlements %s" % ",".join(entitlement_ids))
+    LOG.debug("installing entitlements %s" % ",".join(entitlement_ids))
     cluster = request(app_url + "/api/cluster/clusters/my",
                       headers=hdrs).json()
     aion_hdrs = {
@@ -441,7 +450,7 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
         "Origin": "https://" + platform_addr,
         "Referer": "https://" + platform_addr + "/"
     }
-    resp = request(aion_url  + "/api/lic/entitlements/x/bulk-host",
+    resp = request(aion_url + "/api/lic/entitlements/x/bulk-host",
                    headers=aion_hdrs, method="OPTIONS")
 
     aion_hdrs = {
@@ -451,16 +460,17 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
     }
     host_id = cluster["id"]
     data = {
-        "host_id" : host_id,
+        "host_id": host_id,
         "entitlement_ids": entitlement_ids
     }
-    bulk_host = request(aion_url  + "/api/lic/entitlements/x/bulk-host",
+
+    bulk_host = request(aion_url + "/api/lic/entitlements/x/bulk-host",
                         headers=aion_hdrs, data=data).json()
 
     data = {
         "type": "entitlement"
     }
-    start_sync = request(app_url  + "/api/cluster/updates/x/start-sync",
+    start_sync = request(app_url + "/api/cluster/updates/x/start-sync",
                          headers=hdrs, data=data).json()
 
 
@@ -534,12 +544,12 @@ def main():
     }
     request(app_url + "/api/cluster/settings/temeva/login", headers=hdrs, data=data)
 
-    new_product_list = c.get('product_list')
+    new_product_list = c.get("deploy_products")
     if new_product_list:
         new_product_list = json.loads(new_product_list)
-        install_products(app_url, app_token, new_product_list, c["deploy_location_name"])
+        install_products(app_url, app_token, new_product_list, c["deploy_location"])
 
-    new_entitlement_list = c.get('entitlement_list')
+    new_entitlement_list = c.get('entitlements')
     if new_entitlement_list:
         new_entitlement_list = json.loads(new_entitlement_list)
         install_entitlements(aion_url, access_token, app_url, app_token, c["platform_addr"], new_entitlement_list)

@@ -1,6 +1,6 @@
-## Run Spirent AION Platform
+## Run Spirent AION Platform LabServer
 
-Run Spirent AION Platform.
+Run Spirent AION Platform, deploy STC LabServer product and use hosted Spirent TestCenter license entitlements.
 
 ## Usage
 
