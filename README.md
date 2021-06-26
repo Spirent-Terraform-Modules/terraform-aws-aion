@@ -10,7 +10,7 @@ After `terraform apply` finishes you will be able to point your browser at the `
 
 Set `enable_provisioner=false` to run the configuration wizard manually in a web browser.  Otherwise, when `enable_provisioner=false` login to https://<your_public_ip> using the values of `admin_email` and `admin_password`.
 
-See [product configuration](#product_configuration) for automated and manual configuration details.
+See [product configuration](#product-configuration) for automated and manual configuration details.
 
 ## Prerequisites
 - AWS user credentials (environment variables AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY)
