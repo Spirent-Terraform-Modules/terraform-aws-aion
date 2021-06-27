@@ -73,13 +73,13 @@ def parse_args():
     parser.add_argument("--local_addr",
                         help="Local API IP/host.  Will use platform_addr if not specified.",
                         type=str, default="")
-    parser.add_argument("--platform_addr", help="Cluser/Node IP/host", type=str,
+    parser.add_argument("--platform_addr", help="Cluster/Node IP/host", type=str,
                         required=True)
     parser.add_argument("--admin_email", help="Admin Email", type=str,
                         default="")
-    parser.add_argument("--admin_password", help="Admin Email", type=str,
+    parser.add_argument("--admin_password", help="Admin Password", type=str,
                         required=True)
-    parser.add_argument("--local_admin_password", help="HTTP Enabled", type=str,
+    parser.add_argument("--local_admin_password", help="Local Admin Password", type=str,
                         default="")
 
     parser.add_argument("-v", "--verbose", help="Verbose logging", type=str2bool,
@@ -88,7 +88,7 @@ def parse_args():
 
     args = parser.parse_args()
     if args.admin_password == "":
-        raise Exceoption("admin password must be specified")
+        raise Exception("admin password must be specified")
     return args
 
 
@@ -212,7 +212,7 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         LOG.error('%s' % str(e))
-        LOG.debug('Error in setup-aion', exc_info=True)
+        LOG.debug('Error in release-aion', exc_info=True)
         sys.exit(str(e))
 
 '''

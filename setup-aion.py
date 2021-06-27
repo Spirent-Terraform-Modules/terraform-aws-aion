@@ -74,7 +74,7 @@ def parse_args():
     parser.add_argument("--local_addr",
                         help="Local API IP/host.  Will use platform_addr if not specified.",
                         type=str, default="")
-    parser.add_argument("--platform_addr", help="Cluser/Node IP/host", type=str,
+    parser.add_argument("--platform_addr", help="Cluster/Node IP/host", type=str,
                         required=True)
     parser.add_argument("--cluster_name", help="Node Name", type=str,
                         default="")
@@ -86,7 +86,7 @@ def parse_args():
                         default="")
     parser.add_argument("--admin_email", help="Admin Email", type=str,
                         default="")
-    parser.add_argument("--admin_password", help="Admin Email", type=str,
+    parser.add_argument("--admin_password", help="Admin Password", type=str,
                         required=True)
     parser.add_argument("--org_id", help="Organization ID", type=str,
                         default="")
@@ -98,7 +98,7 @@ def parse_args():
                         default=False)
     parser.add_argument("--http_enabled", help="HTTP Enabled", type=str2bool,
                         default=False)
-    parser.add_argument("--local_admin_password", help="HTTP Enabled", type=str,
+    parser.add_argument("--local_admin_password", help="Local Admin Password", type=str,
                         default="")
     parser.add_argument("--node_storage_provider", help="Node Storage Provider", type=str,
                         default="local")
@@ -120,7 +120,7 @@ def parse_args():
 
     args = parser.parse_args()
     if args.admin_password == "":
-        raise Exceoption("admin password must be specified")
+        raise Exception("admin password must be specified")
     return args
 
 
@@ -218,7 +218,7 @@ def initialize_platform(c, org_info, user_info):
             break
 
         if (time.time() - start_time) > wait_time:
-            raise Exception("Failed to receive respone from %s" %
+            raise Exception("Failed to receive response from %s" %
                             app_url + "/api/local/initialization")
         time.sleep(5)
         LOG.debug("retrying %s" % app_url + "/api/local/initialization")
@@ -327,6 +327,7 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
         # wait for product sync...
         start_time = time.time()
         product_ok = False
+        deployed = False
         while True:
             time.sleep(5)
             local_products = request(app_url + "/api/inv/products",
@@ -337,12 +338,19 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
                 for vs in lp.get("version_summaries", []):
                     if p["version_id"] == vs["id"]:
                         product_ok = True
+                        deployed = lp.get("deployed")
                         break
             if product_ok:
                 break
-            if (time.time() - start_time) > 30:
+            if (time.time() - start_time) > 60:
                 break
             LOG.debug("retrying product list %s" % app_url + "/api/inv/products")
+
+        if not product_ok:
+            raise Exception("product %s sync failed." % p["name"])
+        if deployed:
+            LOG.info("product %s is already deployed" % p["name"])
+            continue
 
         data = {
             "id": None,
@@ -370,7 +378,7 @@ def install_products(app_url, app_token, new_product_list, deploy_location):
                         nodes[0]["id"] + "/api/local/product-instances",
                         headers=temp_hdrs, data=data).json()
 
-        LOG.debug("deplogy product response: %s" % json.dumps(r))
+        LOG.debug("deploy product response: %s" % json.dumps(r))
 
 
 def entitlement_match(new_entitlement_list, e):
@@ -408,12 +416,9 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
                          headers=hdrs).json()
     LOG.debug("workspaces: %s" % json.dumps(workspaces))
 
-    # Application ID doesn't seem to be returned by APIs ???  Use static ID
-    app_id = "31f135bc9bd04d1faa15940dd3564a29%2Ce8c43606b3924efbaa86f82bc47dd279%2Ce363f6c9c3a0467eae31f24a99ff2044%2C8b5f9a0d676e49f1a8249a792717b306"
-
     entitlements = request(app_url +
-                           "/api/cluster/temeva-proxy/api/lic/entitlements?application_id=" +
-                           app_id + "&search=&entdetail=summary&show_hardware=false",
+                           "/api/cluster/temeva-proxy/api/lic/entitlements?" +
+                           "search=&entdetail=summary&show_hardware=false",
                            headers=hdrs).json()
     LOG.debug("entitlements: %s" % json.dumps(entitlements, indent=4))
 
@@ -426,6 +431,15 @@ def install_entitlements(aion_url, access_token, app_url, app_token, platform_ad
     entitlement_ids = []
     match_list = list(new_entitlement_list)
     LOG.debug("checking for match: %s" % json.dumps(match_list))
+
+    for e in local_entitlements:
+        mi = entitlement_match(match_list, e)
+        if mi >= 0:
+            LOG.info("entitlement already installed: %s" % json.dumps(match_list[mi]))
+            del match_list[mi]
+            if not match_list:
+                break
+
     for e in entitlements:
         mi = entitlement_match(match_list, e)
         if mi >= 0:
@@ -546,6 +560,8 @@ def main():
 
     new_product_list = c.get("deploy_products")
     if new_product_list:
+        # short sleep may fix issue with intermittent product sync not working w/ older AION versions
+        time.sleep(15)
         new_product_list = json.loads(new_product_list)
         install_products(app_url, app_token, new_product_list, c["deploy_location"])
 

@@ -8,7 +8,7 @@ This Terraform module deploys the [Spirent AION AMI](https://aws.amazon.com/mark
 
 After `terraform apply` finishes you will be able to point your browser at the `instance_public_ips` addresses to use the platform or perform additional configuration.
 
-Set `enable_provisioner=false` to run the configuration wizard manually in a web browser.  Otherwise, when `enable_provisioner=false` login to https://<your_public_ip> using the values of `admin_email` and `admin_password`.
+Set `enable_provisioner=false` to run the configuration wizard manually in a web browser.  Otherwise, when `enable_provisioner=true` login to https://<your_public_ip> using the values of `admin_email` and `admin_password`.
 
 See [product configuration](#product-configuration) for automated and manual configuration details.
 
@@ -123,7 +123,7 @@ Product configuration specifies product deployment and license entitlements for 
 Use Terraform variables for automated configuration.
 
 #### Entitlement List
-The entilement list specifies which license entitlements are hosted to the new AION platform.  An empty list will not add entitlements.  Use the following options to define each entitlement:
+The entitlement list specifies which license entitlements are hosted to the new AION platform.  An empty list will not add entitlements.  Use the following options to define each entitlement:
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
@@ -148,7 +148,7 @@ Use the web browser to perform additional manual configuration after the intance
 2. Click _Install Entitlements_
 3. Use one of the following methods to add entitlements (#1 is prefered)
    1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
-      **Note:** Hosted entitlements should be released before destroying the instance.  As a convenience `terraform destroy` will unhost remaining entitlements.  However, if instance state is manually manipulated you may need to contact Spirent support to release enitlements for you.
+      **Note:** Hosted entitlements should be released before destroying the instance.  As a convenience `terraform destroy` will unhost remaining entitlements.  However, if instance state is manually manipulated you may need to contact Spirent support to release entitlements for you.
    2. Install a license entitlement file obtained from Spirent support
 
 #### Add Products
