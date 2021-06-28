@@ -3,23 +3,43 @@
 ![Image of Spirent AION](./images/aion.jpg)
 
 ## Description
+[Spirent AION](https://www.spirent.com/products/aion) is a cloud platform for Spirent products and license management.
+This Terraform module deploys the [Spirent AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) on AWS using your spirentaion.com account.
 
-Run [Spirent AION](https://www.spirent.com/products/aion) platform instances.  After Terraform apply finishes you will be able to point your browser at the `instance_public_ips` addresses.
+After `terraform apply` finishes you will be able to point your browser at the `instance_public_ips` addresses to use the platform or perform additional configuration.
 
-If you would like to configure the Spirent AION platform in a web browser set the variable `enable_provisioner=false`.  When `enable_provisioner=true` the instance will be configured.  However, license entitlement and product installation will need to be completed in your web browser (see below).  Login to the platform instance https://<your_public_ip> using the values of `admin_email` and `admin_password`.
+Set `enable_provisioner=false` to run the configuration wizard manually in a web browser.  Otherwise, when `enable_provisioner=true` login to https://<your_public_ip> using the values of `admin_email` and `admin_password`.
 
-### Add License Entitlements
-1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _License Manager_, _Entitlements_
-2. Click _Install Entitlements_
-3. Use one of the following methods to add entitlements (#1 is prefered)
-   1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
-      **Note:** Hosted entitlements should be released before destroying the instance.  When entitlements are not released you will need to contact Spirent support to release them for you.
-   2. Install a license entitlement file obtained from Spirent support
+See [product configuration](#product-configuration) for automated and manual configuration details.
 
-### Add Products
-1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _Settings_, _Add New Products_
-2. Click _Install New Products_
-3. Select products and versions and click _Install_
+## Prerequisites
+- AWS user credentials (environment variables AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY)
+- Accept [Spirent AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) product subscription on AWS Marketplace
+- Create an EC2 key pair on AWS for SSH access and private key file
+
+## Terraform examples
+Terraform examples are located in the [examples](./examples) folder.
+
+### Basic usage
+```
+module "aion" {
+  source = "git::https://github.com/Spirent-Terraform-Modules/terraform-aws-aion"
+
+  vpc_id         = "vpc-123456789"
+  subnet_id      = "subnet-123456789"
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+
+  key_name         = "bootstrap_key"
+  private_key_file = "./bootstrap_private_key_file"
+
+  aion_url       = "https://spirent.spirentaion.com"
+  aion_user      = "user1@spirent.com"
+  aion_password  = "aion-password"
+  admin_password = "admin-password"
+}
+```
+
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -70,9 +90,12 @@ No Modules.
 | aion\_user | AION user registered on aion\_url | `string` | n/a | yes |
 | ami | The AION AMI.  When not specified latest AMI will be used. | `string` | `""` | no |
 | cluster\_names | Instance cluster names.  List length must equal instance\_count. | `list(string)` | `[]` | no |
+| deploy\_location | Location name for deployed product instances. | `string` | `"location1"` | no |
+| deploy\_products | List of products to deploy. See Product List below for details. | `list(map(string))` | `[]` | no |
 | dest\_dir | Destination directory on the instance where provisioning files will be copied | `string` | `"~"` | no |
 | eips | List of management plane elastic IP IDs.  Leave empty if subnet auto assigns IPs. | `list(string)` | `[]` | no |
 | enable\_provisioner | Enable provisioning.  When enabled instances will be initialized with the specified variables. | `bool` | `true` | no |
+| entitlements | Install hosted entitlements from organization's AION platform. See Entitlement List below for details. | `list(map(string))` | `[]` | no |
 | http\_enabled | Allow HTTP access as well as HTTPS.  Normally this is not recommended. | `bool` | `false` | no |
 | ingress\_cidr\_blocks | List of management interface ingress IPv4/IPv6 CIDR ranges.  Set to empty list when using security\_group\_ids. | `list(string)` | n/a | yes |
 | instance\_count | Number of instances to create | `number` | `1` | no |
@@ -114,3 +137,44 @@ The root_block_device mapping supports the following:
 | throughput | Throughput to provision for a volume in mebibytes per second (MiB/s). This is only valid for volume_type of `gp3`. | `number` | n/a | no |
 | volume_size | Size of the volume in gibibytes (GiB). | `number` | n/a | no |
 | volume_type | Type of volume. Valid values include `standard`, `gp2`, `gp3`, `io1`, `io2`, `sc1`, or `st1`. | `string` | `gp2` | no |
+
+
+## Product Configuration
+Product configuration specifies product deployment and license entitlements for the platform.
+
+### Automated
+Use Terraform variables for automated configuration.
+
+#### Entitlement List
+The entitlement list specifies which license entitlements are hosted to the new AION platform.  An empty list will not add entitlements.  Use the following options to define each entitlement:
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| product | Product name | `string` | n/a | yes |
+| license | License name | `string` | n/a | yes |
+| number  | Entitlement number.  When specified number must match otherwise any will match.| `number` | n/a | no |
+
+#### Product List
+The product list specifies which products will be deployed.  An empty list will not deploy any products.  Use the following options to define each product deployment:
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| name | Product name | `string` | n/a | yes |
+| version | Product version | `string` | n/a | yes |
+
+
+### Manual
+Use the web browser to perform additional manual configuration after the intance is deployed.
+
+#### Add License Entitlements
+1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _License Manager_, _Entitlements_
+2. Click _Install Entitlements_
+3. Use one of the following methods to add entitlements (#1 is prefered)
+   1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
+      **Note:** Hosted entitlements should be released before destroying the instance.  As a convenience `terraform destroy` will unhost remaining entitlements.  However, if instance state is manually manipulated you may need to contact Spirent support to release entitlements for you.
+   2. Install a license entitlement file obtained from Spirent support
+
+#### Add Products
+1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _Settings_, _Add New Products_
+2. Click _Install New Products_
+3. Select products and versions and click _Install_
