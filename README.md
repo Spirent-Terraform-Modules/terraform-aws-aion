@@ -17,6 +17,29 @@ See [product configuration](#product-configuration) for automated and manual con
 - Accept [Spirent AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) product subscription on AWS Marketplace
 - Create an EC2 key pair on AWS for SSH access and private key file
 
+## Terraform examples
+Terraform examples are located in the [examples](./examples) folder.
+
+### Basic usage
+```
+module "aion" {
+  source = "git::https://github.com/Spirent-Terraform-Modules/terraform-aws-aion"
+
+  vpc_id         = "vpc-123456789"
+  subnet_id      = "subnet-123456789"
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+
+  key_name         = "bootstrap_key"
+  private_key_file = "./bootstrap_private_key_file"
+
+  aion_url       = "https://spirent.spirentaion.com"
+  aion_user      = "user1@spirent.com"
+  aion_password  = "aion-password"
+  admin_password = "admin-password"
+}
+```
+
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
