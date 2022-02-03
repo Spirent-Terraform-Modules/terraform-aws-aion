@@ -9,7 +9,7 @@ data "aws_ami" "aion" {
 
   filter {
     name   = "name"
-    values = ["aion-platform-image-*"]
+    values = ["*aion-platform-image-*"]
   }
 }
 

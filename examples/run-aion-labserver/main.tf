@@ -62,11 +62,11 @@ module "aion" {
   admin_password = var.admin_password
   http_enabled   = true
 
-  instance_type = "m5.xlarge"
+  instance_type = "m5.2xlarge"
   root_block_device = [
     {
       volume_type = "gp2"
-      volume_size = 60
+      volume_size = 100
     }
   ]
 
@@ -74,7 +74,7 @@ module "aion" {
   deploy_products = [
     {
       name    = "STC LabServer"
-      version = "5.20.0032"
+      version = "5.30.0136"
     }
   ]
 
