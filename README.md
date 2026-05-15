@@ -1,10 +1,10 @@
-# AWS Spirent AION Platform Terraform
+# AWS AION Platform Terraform
 
-![Image of Spirent AION](./images/aion.jpg)
+![Image of AION](./images/aion.png)
 
 ## Description
-[Spirent AION](https://www.spirent.com/products/aion) is a cloud platform for Spirent products and license management.
-This Terraform module deploys the [Spirent AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) on AWS using your spirentaion.com account.
+[AION](https://www.viavisolutions.com/en-us/products/aion) is a cloud platform for VIAVI products and license management.
+This Terraform module deploys the [AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) on AWS using your AION account.
 
 After `terraform apply` finishes you will be able to point your browser at the `instance_public_ips` addresses to use the platform or perform additional configuration.
 
@@ -14,7 +14,7 @@ See [product configuration](#product-configuration) for automated and manual con
 
 ## Prerequisites
 - AWS user credentials (environment variables AWS_ACCESS_KEY_ID & AWS_SECRET_ACCESS_KEY)
-- Accept [Spirent AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) product subscription on AWS Marketplace
+- Accept [AION AMI](https://aws.amazon.com/marketplace/pp/prodview-xra3bq4pshjhq) product subscription on AWS Marketplace
 - Create an EC2 key pair on AWS for SSH access and private key file
 
 ## Terraform examples
@@ -33,8 +33,8 @@ module "aion" {
   key_name         = "bootstrap_key"
   private_key_file = "./bootstrap_private_key_file"
 
-  aion_url       = "https://spirent.spirentaion.com"
-  aion_user      = "user1@spirent.com"
+  aion_url       = "https://spirent.aion.viavisolutions.com"  # TODO: URL will change, update when known
+  aion_user      = "user1@example.com"
   aion_password  = "aion-password"
   admin_password = "admin-password"
 }
@@ -86,7 +86,7 @@ No Modules.
 | admin\_last\_name | Cluster admin user last name.  Default is obtained from AION user information. | `string` | `""` | no |
 | admin\_password | Cluster admin user password. Use this to login to to the instance web page. | `string` | n/a | yes |
 | aion\_password | AION user password for aion\_url | `string` | n/a | yes |
-| aion\_url | AION URL. An example URL would be https://example.spirentaion.com. | `string` | n/a | yes |
+| aion\_url | AION URL. An example URL would be https://example.aion.viavisolutions.com. | `string` | n/a | yes |
 | aion\_user | AION user registered on aion\_url | `string` | n/a | yes |
 | ami | The AION AMI.  When not specified latest AMI will be used. | `string` | `""` | no |
 | cluster\_names | Instance cluster names.  List length must equal instance\_count. | `list(string)` | `[]` | no |
@@ -103,7 +103,7 @@ No Modules.
 | instance\_type | AWS instance type | `string` | `"m5.large"` | no |
 | key\_name | AWS SSH key name to assign to each instance | `string` | n/a | yes |
 | local\_admin\_password | Cluster local admin password for instance SSH access.  Will use admin\_password if not specified. | `string` | `""` | no |
-| metrics\_opt\_out | Opt-out of Spirent metrics data collection | `bool` | `false` | no |
+| metrics\_opt\_out | Opt-out of VIAVI metrics data collection | `bool` | `false` | no |
 | node\_names | Instance cluster node names.  List length must equal instance\_count. | `list(string)` | `[]` | no |
 | node\_storage\_provider | Cluster node storage provider | `string` | `"local"` | no |
 | node\_storage\_remote\_uri | Cluster node storage URI.  Leave blank for default when provider is local | `string` | `""` | no |
@@ -170,9 +170,9 @@ Use the web browser to perform additional manual configuration after the intance
 1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _License Manager_, _Entitlements_
 2. Click _Install Entitlements_
 3. Use one of the following methods to add entitlements (#1 is prefered)
-   1. Login to <your_org>.spirentaion.com and select entitlements to host in the new instance\
-      **Note:** Hosted entitlements should be released before destroying the instance.  As a convenience `terraform destroy` will unhost remaining entitlements.  However, if instance state is manually manipulated you may need to contact Spirent support to release entitlements for you.
-   2. Install a license entitlement file obtained from Spirent support
+   1. Login to <your_org>.aion.viavisolutions.com and select entitlements to host in the new instance\
+      **Note:** Hosted entitlements should be released before destroying the instance.  As a convenience `terraform destroy` will unhost remaining entitlements.  However, if instance state is manually manipulated you may need to contact VIAVI support to release entitlements for you.
+   2. Install a license entitlement file obtained from VIAVI support
 
 #### Add Products
 1. From _Settings_ <img src="./images/aion_settings.jpg" width="22" height="22"/> navigate to _Settings_, _Add New Products_

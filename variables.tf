@@ -5,7 +5,7 @@ variable "ami" {
 
   validation {
     condition     = var.ami == "" || can(regex("^ami-", var.ami))
-    error_message = "Please provide a valid ami id, starting with \"ami-\". or leave blank for latest Spirent AION AMI."
+    error_message = "Please provide a valid ami id, starting with \"ami-\". or leave blank for latest AION AMI."
   }
 }
 
@@ -87,7 +87,7 @@ variable "enable_provisioner" {
 }
 
 variable "aion_url" {
-  description = "AION URL. An example URL would be https://example.spirentaion.com."
+  description = "AION URL. An example URL would be https://example.aion.viavisolutions.com."
   type        = string
 }
 
@@ -161,7 +161,7 @@ variable "http_enabled" {
 }
 
 variable "metrics_opt_out" {
-  description = "Opt-out of Spirent metrics data collection"
+  description = "Opt-out of VIAVI metrics data collection"
   type        = bool
   default     = false
 }

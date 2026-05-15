@@ -65,7 +65,7 @@ def get_app_url(c):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--aion_url",
-                        help="AION URL. An example URL would be https://example.spirentaion.com", type=str,
+                        help="AION URL. An example URL would be https://example.aion.viavisolutions.com", type=str,
                         default="", required=True)
     parser.add_argument("--aion_user", help="AION user", type=str,
                         required=True)
@@ -580,6 +580,6 @@ if __name__ == "__main__":
         sys.exit(str(e))
 
 '''
-python3 setup-aion.py --aion_url "https://spirent.spirentaion.com" --platform_addr "10.109.121.113"
+python3 setup-aion.py --aion_url "https://spirent.aion.viavisolutions.com" --platform_addr "10.109.121.113"  # TODO: URL will change, update when known
 --aion_user <user> --aion_password <password> --admin_password <password>
 '''

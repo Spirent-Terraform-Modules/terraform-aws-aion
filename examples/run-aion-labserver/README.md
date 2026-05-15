@@ -1,6 +1,6 @@
-## Run Spirent AION Platform LabServer
+## Run AION Platform LabServer
 
-Run Spirent AION Platform, deploy STC LabServer product and use hosted Spirent TestCenter license entitlements.
+Run AION Platform, deploy STC LabServer product and use hosted TestCenter license entitlements.
 
 ## Usage
 
@@ -42,7 +42,7 @@ No resources.
 |------|-------------|------|---------|:--------:|
 | admin\_password | New cluster admin password. Specify using command line or env variables. | `any` | n/a | yes |
 | aion\_password | AION password. Specify using command line or env variables. | `any` | n/a | yes |
-| aion\_url | AION URL. | `string` | `"https://spirent.spirentaion.com"` | no |
+| aion\_url | AION URL. | `string` | `"https://spirent.aion.viavisolutions.com"` | no |
 | aion\_user | AION user. Specify using command line or env variables. | `any` | n/a | yes |
 | key\_name | AWS SSH key name to assign to each instance | `string` | `"bootstrap_key"` | no |
 | private\_key\_file | AWS key private file | `string` | `"bootstrap_private_key_file"` | no |

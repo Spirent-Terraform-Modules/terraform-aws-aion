@@ -29,7 +29,7 @@ variable "private_key_file" {
 
 variable "aion_url" {
   description = "AION URL."
-  default     = "https://spirent.spirentaion.com"
+  default     = "https://spirent.aion.viavisolutions.com" # TODO: URL will change, update when known
 }
 
 variable "aion_user" {

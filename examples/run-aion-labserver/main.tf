@@ -29,7 +29,7 @@ variable "private_key_file" {
 
 variable "aion_url" {
   description = "AION URL."
-  default     = "https://spirent.spirentaion.com"
+  default     = "https://spirent.aion.viavisolutions.com" # TODO: URL will change, update when known
 }
 
 variable "aion_user" {
@@ -80,12 +80,12 @@ module "aion" {
 
   entitlements = [
     {
-      product = "Spirent TestCenter"
+      product = "TestCenter"
       license = "Virtual High Scale Bandwidth"
       number  = 1000
     },
     {
-      product = "Spirent TestCenter"
+      product = "TestCenter"
       license = "Access"
       number  = 100
     }

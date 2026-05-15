@@ -1,7 +1,7 @@
 
 
 
-# find latest Spirent AION AMI
+# find latest AION AMI
 data "aws_ami" "aion" {
   owners           = ["679593333241"]
   most_recent      = true

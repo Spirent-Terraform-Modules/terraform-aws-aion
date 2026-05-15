@@ -1,6 +1,6 @@
-## Run Spirent AION Platform
+## Run AION Platform
 
-Run Spirent AION Platform with an elastic IP.
+Run AION Platform with an elastic IP.
 
 ## Usage
 
@@ -42,7 +42,7 @@ No resources.
 |------|-------------|------|---------|:--------:|
 | admin\_password | New cluster admin password. Specify using command line or env variables. | `any` | n/a | yes |
 | aion\_password | AION password. Specify using command line or env variables. | `any` | n/a | yes |
-| aion\_url | AION URL. | `string` | `"https://spirent.spirentaion.com"` | no |
+| aion\_url | AION URL. | `string` | `"https://spirent.aion.viavisolutions.com"` | no |
 | aion\_user | AION user. Specify using command line or env variables. | `any` | n/a | yes |
 | eip | Instance Elastic IP ID | `string` | `"eipalloc-123456789"` | no |
 | key\_name | AWS SSH key name to assign to each instance | `string` | `"bootstrap_key"` | no |
